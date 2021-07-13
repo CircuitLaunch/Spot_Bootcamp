@@ -52,13 +52,13 @@ class Spot:
 
         # List current leases
         self.lease_client = self.robot.ensure_client('lease')
-        spot_lease_list = lease_client.list_leases()
+        spot_lease_list = self.lease_client.list_leases()
         print(f'Spot lease list:\n{spot_lease_list}')
 
         # To obtain a lease
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
-        self.lease = lease_client.acquire()
-        spot_lease_list = lease_client.list_leases()
+        self.lease = self.lease_client.acquire()
+        spot_lease_list = self.lease_client.list_leases()
         print(f'Spot lease list:\n{spot_lease_list}')
 
         self.command_client = robot.ensure_client(RobotCommandClient.default_service_name)
