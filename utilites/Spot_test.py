@@ -3,7 +3,7 @@
 from Spot import *
 
 if __name__ == '__main__':
-  spot = Spot()
+    spot = Spot()
 
 	# It's ALIVE!
 	spot.power_on()
@@ -23,3 +23,4 @@ if __name__ == '__main__':
 
 	# Power down
 	time.estop(graceful=True)
+    
