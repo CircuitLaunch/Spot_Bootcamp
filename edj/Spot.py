@@ -148,5 +148,11 @@ class Spot:
         print('Spot standing')
         blocking_stand(self.command_client, timeout_sec=10)
 
+    def pose(self, yaw=0.0, roll=0.0, pitch=0.0):
+        print(f'Spot posing (yaw: {yaw}, roll: {roll}, pitch: {pitch})')
+        euler = bosdyn.geometry.EulerZXY(yaw=yaw, roll=roll, pitch=pitch)
+        pose = RobotCommandBuilder.synchro_stand_command(euler)
+        self.command_client.robot_command(pose)
+
     def get_images(self, sources, wait=True):
         return self.image_client.get_image_from_sources([sources])
