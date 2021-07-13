@@ -9,10 +9,6 @@ if __name__ == '__main__':
     # It's ALIVE!
     spot.power_on()
 
-    # Strike some poses
-    spot.stand()
-    time.sleep(5.0)
-
     spot.belly_rub(direction=BELLY_RUB_RIGHT)
     time.sleep(10.0)
 

@@ -69,7 +69,9 @@ class Spot:
         self.robot.time_sync.wait_for_sync()
 
     def __del__(self):
-        self.power_off()
+        print('Terminating keep alive')
+        self.estop_keep_alive.settle_then_cut()
+        self.estop_keep_alive.deregister()
         print('Returning lease')
         self.lease_client.return_lease(self.lease)
         print('Spot module going out of scope')
