@@ -16,6 +16,8 @@ if __name__ == '__main__':
     spot.belly_rub(direction=BELLY_RUB_RIGHT)
     time.sleep(10.0)
 
+    spot.power_on()
+    
     spot.self_right()
     time.sleep(10.0)
 
