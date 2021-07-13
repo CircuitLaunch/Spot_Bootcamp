@@ -14,3 +14,9 @@ if __name__ == '__main__':
 
     # Power down
     spot.estop(graceful=True)
+
+    print('Trying to make Python GC the Spot object')
+    spot = None
+    time.sleep(5.0)
+
+    exit(0)
