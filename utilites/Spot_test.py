@@ -13,10 +13,10 @@ if __name__ == '__main__':
     time.sleep(5.0)
 
     spot.belly_rub(direction=BELLY_RUB_RIGHT)
-    time.sleep(5.0)
+    time.sleep(10.0)
 
     spot.self_right()
-    time.sleep(5.0)
+    time.sleep(10.0)
 
     spot.stand()
     time.sleep(5.0)
