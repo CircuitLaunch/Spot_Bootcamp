@@ -108,7 +108,7 @@ class Spot:
         # Belly-rub
         print('Spot rolling over and powering down')
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
-        command_id = self.command_client.robot_command(belly_rub, end_time_secs=time.time() + 8.0)
+        command_id = self.command_client.robot_command(belly_rub, end_time_secs=time.time() + 10.0)
         '''
         if wait:
             now = time.time()
