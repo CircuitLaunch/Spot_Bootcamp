@@ -13,7 +13,7 @@ BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
 
 class Spot:
-    def __init__(ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl'):
+    def __init__(self, ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl'):
         # Create an sdk object (the name is arbitrary)
         self.sdk = bosdyn.client.create_standard_sdk('understanding-spot')
 
@@ -66,19 +66,19 @@ class Spot:
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
 
-    def __del__():
+    def __del__(self):
         pass
 
-    def power_on():
+    def power_on(self):
         # Powering Spot on
         self.robot.power_on(timeout_sec=20)
         spot_is_on = self.robot.is_powered_on()
         print(f'Spot is powered { "up" if spot_is_on else "down" }')
 
-    def power_off(graceful=True):
+    def power_off(self, graceful=True):
         robot.power_off(cut_immediately=not graceful)
 
-    def estop(graceful=True):
+    def estop(self, graceful=True):
         # EStop (cut_immediately=False will cause Spot to sit down before powering off
         # cut_immediately=True will cause power to be cut immediately, and Spot will
         # collapse)
@@ -87,7 +87,7 @@ class Spot:
         else:
             self.estop_keep_alive.stop()
 
-    def belly_rub(direction=1, wait=True):
+    def belly_rub(self, direction=1, wait=True):
         # Belly-rub
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
         command_id = self.command_client.robot_command(belly_rub)
@@ -121,9 +121,9 @@ class Spot:
                 "Took longer than {:.1f} seconds to assure the robot stood.".format(now - start_time))
         '''
 
-    def self_right(wait=True):
+    def self_right(self, wait=True):
         self_right = RobotCommandBuilder.selfright_command()
         self.command_client.robot_command(self_right)
 
-    def stand(wait=True):
+    def stand(self, wait=True):
         blocking_stand(self.command_client, timeout_sec=10)
