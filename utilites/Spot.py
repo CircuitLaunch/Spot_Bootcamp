@@ -31,7 +31,7 @@ class Spot:
         # Get the robot state
         self.state_client = self.robot.ensure_client('robot-state')
         self.spot_state = self.state_client.get_robot_state()
-        print(f'Spot State:\n{spot_state}')
+        print(f'Spot State:\n{self.spot_state}')
 
         # Create an estop client and get the estop status
         self.estop_client = self.robot.ensure_client('estop')
