@@ -97,7 +97,7 @@ class Spot:
 
     def belly_rub(self, direction=1, wait=True):
         # Belly-rub
-        print('Spot rolling over')
+        print('Spot rolling over and powering down')
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
         command_id = self.command_client.robot_command(belly_rub)
         '''
