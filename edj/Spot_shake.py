@@ -9,6 +9,10 @@ if __name__ == '__main__':
     # It's ALIVE!
     spot.power_on()
 
+    # Strike some poses
+    spot.stand()
+    time.sleep(5.0)
+    
     for i in range(4):
         spot.pose(yaw=0.25)
         time.sleep(1.0)
