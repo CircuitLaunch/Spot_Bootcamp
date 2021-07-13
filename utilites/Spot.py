@@ -66,17 +66,26 @@ class Spot:
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
 
+    def __del__():
+        pass
+
     def power_on():
         # Powering Spot on
         self.robot.power_on(timeout_sec=20)
         spot_is_on = self.robot.is_powered_on()
         print(f'Spot is powered { "up" if spot_is_on else "down" }')
 
+    def power_off(graceful=True):
+        robot.power_off(cut_immediately=not graceful)
+
     def estop(graceful=True):
         # EStop (cut_immediately=False will cause Spot to sit down before powering off
         # cut_immediately=True will cause power to be cut immediately, and Spot will
         # collapse)
-        robot.power_off(cut_immediately=not graceful)
+        if graceful:
+            self.estop_keep_alive.settle_then_cut()
+        else:
+            self.estop_keep_alive.stop()
 
     def belly_rub(direction=1, wait=True):
         # Belly-rub
