@@ -8,16 +8,17 @@ import bosdyn.client.util
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
 from bosdyn.client.robot_state import RobotStateClient
+from bosdyn.client.image import ImageClient
 from bosdyn.util import seconds_to_duration
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
 
 class Spot:
-    def __init__(self, ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl'):
+    def __init__(self, project='custom_project', ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl'):
         print('Spot module instantiated')
         # Create an sdk object (the name is arbitrary)
-        self.sdk = bosdyn.client.create_standard_sdk('understanding-spot')
+        self.sdk = bosdyn.client.create_standard_sdk(project)
 
         # Create a connection to the robot
         self.robot = self.sdk.create_robot(ip)
@@ -64,6 +65,7 @@ class Spot:
         print(f'Spot lease list:\n{spot_lease_list}')
 
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
+        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -82,7 +84,10 @@ class Spot:
         # Powering Spot on
         self.robot.power_on(timeout_sec=20)
         spot_is_on = self.robot.is_powered_on()
-        print(f'Spot is powered { "up" if spot_is_on else "down" }')
+        assert spot_is_on, "Spot failed power on"
+        if spot_is_on:
+            print(f'Spot is powered { "up" if spot_is_on else "down" }')
+        return spot_is_on
 
     def power_off(self, graceful=True):
         print('Spot powering off')
@@ -103,7 +108,7 @@ class Spot:
         # Belly-rub
         print('Spot rolling over and powering down')
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
-        command_id = self.command_client.robot_command(belly_rub)
+        command_id = self.command_client.robot_command(belly_rub, end_time_secs=time.time() + 8.0)
         '''
         if wait:
             now = time.time()
@@ -142,3 +147,6 @@ class Spot:
     def stand(self, wait=True):
         print('Spot standing')
         blocking_stand(self.command_client, timeout_sec=10)
+
+    def get_images(self, sources, wait=True):
+        return self.image_client.get_image_from_sources([sources])
