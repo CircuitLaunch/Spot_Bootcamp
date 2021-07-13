@@ -15,6 +15,7 @@ BELLY_RUB_LEFT = 2
 
 class Spot:
     def __init__(self, ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl'):
+        print('Spot module instantiated')
         # Create an sdk object (the name is arbitrary)
         self.sdk = bosdyn.client.create_standard_sdk('understanding-spot')
 
@@ -69,7 +70,9 @@ class Spot:
 
     def __del__(self):
         self.power_off()
+        print('Returning lease')
         self.lease_client.return_lease(self.lease)
+        print('Spot module going out of scope')
 
     def power_on(self):
         # Powering Spot on
@@ -78,6 +81,7 @@ class Spot:
         print(f'Spot is powered { "up" if spot_is_on else "down" }')
 
     def power_off(self, graceful=True):
+        print('Spot powering off')
         self.robot.power_off(cut_immediately=not graceful)
 
     def estop(self, graceful=True):
@@ -85,12 +89,15 @@ class Spot:
         # cut_immediately=True will cause power to be cut immediately, and Spot will
         # collapse)
         if graceful:
+            print('Spot graceful estop')
             self.estop_keep_alive.settle_then_cut()
         else:
+            print('Spot immediate estop')
             self.estop_keep_alive.stop()
 
     def belly_rub(self, direction=1, wait=True):
         # Belly-rub
+        print('Spot rolling over')
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
         command_id = self.command_client.robot_command(belly_rub)
         '''
@@ -124,8 +131,10 @@ class Spot:
         '''
 
     def self_right(self, wait=True):
+        print('Spot self-righting')
         self_right = RobotCommandBuilder.selfright_command()
         self.command_client.robot_command(self_right)
 
     def stand(self, wait=True):
+        print('Spot standing')
         blocking_stand(self.command_client, timeout_sec=10)
