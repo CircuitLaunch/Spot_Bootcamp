@@ -68,7 +68,8 @@ class Spot:
         self.robot.time_sync.wait_for_sync()
 
     def __del__(self):
-        pass
+        self.power_off()
+        self.lease_client.return_lease(self.lease)
 
     def power_on(self):
         # Powering Spot on
