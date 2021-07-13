@@ -61,7 +61,7 @@ class Spot:
         spot_lease_list = self.lease_client.list_leases()
         print(f'Spot lease list:\n{spot_lease_list}')
 
-        self.command_client = robot.ensure_client(RobotCommandClient.default_service_name)
+        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -76,7 +76,7 @@ class Spot:
         print(f'Spot is powered { "up" if spot_is_on else "down" }')
 
     def power_off(self, graceful=True):
-        robot.power_off(cut_immediately=not graceful)
+        self.robot.power_off(cut_immediately=not graceful)
 
     def estop(self, graceful=True):
         # EStop (cut_immediately=False will cause Spot to sit down before powering off
