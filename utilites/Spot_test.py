@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from Spot import *
+import time
 
 if __name__ == '__main__':
     spot = Spot()
@@ -22,4 +23,4 @@ if __name__ == '__main__':
     time.sleep(5.0)
 
     # Power down
-    time.estop(graceful=True)
+    spot.estop(graceful=True)
