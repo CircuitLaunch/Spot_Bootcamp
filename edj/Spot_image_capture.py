@@ -27,28 +27,38 @@ if __name__ == '__main__':
                 extension = '.png'
             else:
                 if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGB_U8:
+                    print('\tformat: rgb_u8')
                     num_bytes = 3
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGBA_U8:
+                    print('\tformat: rgba_u8')
                     num_bytes = 4
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U8:
+                    print('\tformat: gs_u8')
                     num_bytes = 1
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U16:
+                    print('\tformat: gs_u16')
                     num_bytes = 2
                 dtype = np.uint8
                 extension = '.jpg'
 
+            print('Extracting image from buffer')
             img = np.frombuffer(image.data, dtype=dtype)
             if image.pixel_format == image_pb2.Image.FORMAT_RAW:
                 try:
+                    print('Reshaping raw image')
                     img = img.reshape(image.rows, image.cols, num_bytes)
                 except ValueError:
+                    print('Decoding image')
                     img = cv2.imdecode(img, -1)
             else:
+                print('Decoding image')
                 img = cv2.imdecode(img, -1)
 
             if source[0:5] == 'front':
+                print('Rotating front image')
                 img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
             elif source[0:5] == 'right':
+                print('Rotating right image')
                 img = cv2.rotate(img, cv2.ROTATE_180)
 
             filename = f'{source}{extension}'
