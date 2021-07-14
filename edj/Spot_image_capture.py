@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     list = ['right_fisheye_image', 'right_depth', 'left_fisheye_image', 'left_depth', 'frontright_fisheye_image', 'frontright_depth', 'frontleft_fisheye_image', 'frontleft_depth', 'back_fisheye_image', 'back_depth']
     images = spot.get_images(list)
-    image_dict = dic(zip(list, images))
+    image_dict = dict(zip(list, images))
     print(image_dict)
 
     '''
