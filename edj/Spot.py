@@ -48,9 +48,10 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            charge = self.spot_state.battery_states.charge_percentage.value
-            voltage = self.spot_state.battery_states.voltage.value
-            temperatures = self.spot_state.battery_states.temperatures
+            battery_state = self.spot_state.battery_states as bosdyn.api.BattryState
+            charge = battery_state.charge_percentage.value
+            voltage = battery_state.voltage.value
+            temperatures = battery_state.temperatures
             print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
