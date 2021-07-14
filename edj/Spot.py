@@ -59,16 +59,9 @@ class Spot:
         spot_estop_status = self.estop_client.get_status()
         if trace_level >= 2:
             print(f'Spot estop status:\n{spot_estop_status}')
-
+            
         # List current leases
         self.lease_client = self.robot.ensure_client('lease')
-        spot_lease_list = self.lease_client.list_leases()
-        if trace_level >= 2:
-            print(f'Spot lease list:\n{spot_lease_list}')
-
-        # To obtain a lease
-        self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
-        self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
@@ -78,6 +71,10 @@ class Spot:
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
+
+    @property
+    def lease(self):
+        return bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
 
     def __del__(self):
         if self.trace_level >= 1:
