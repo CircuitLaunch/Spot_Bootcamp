@@ -27,13 +27,16 @@ if __name__ == '__main__':
             dtype = np.uint8
 
         img = np.fromstring(image.data, dtype=dtype)
-        if image.pixel_format == image_pb2.Image.FORMAT_RAW:
-            img = img.reshape(image.rows, image.cols)
-        else:
-            img = cv2.imdecode(img, -1)
+        if not img.empty():
+            if image.pixel_format == image_pb2.Image.FORMAT_RAW:
+                img = img.reshape(image.rows, image.cols)
+            else:
+                img = cv2.imdecode(img, -1)
 
-        filename = f'{source}.png'
-        cv2.imwrite(filename, img)
+            filename = f'{source}.png'
+            cv2.imwrite(filename, img)
+        else:
+            print('Failed to write empty image')
 
     print('Trying to make Python GC the Spot object')
     spot = None
