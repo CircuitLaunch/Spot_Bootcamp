@@ -141,7 +141,144 @@ class CompiledShader():
             self.image2.update(image)
         self.set_texture(self.image2.pointer, self.image2_texture, 1)
 
+def proto_vec_T_numpy(vec):
+    return numpy.array([vec.x, vec.y, vec.z])
+
+def mat4mul3(mat, vec, vec4=1):
+    ret = numpy.matmul(mat, numpy.append(vec, vec4))
+    return ret[:-1]
+
+def normalize(vec):
+    norm = numpy.linalg.norm(vec)
+    if norm == 0:
+        raise ValueError("norm function returned 0.")
+    return vec/norm
+
+def draw_geometry(plane_wrt_vo, plane_norm_wrt_vo, sz_meters):
+    """Draw as GL_TRIANGLES."""
+    plane_left_wrt_vo = normalize(numpy.cross(numpy.array([0, 0, 1]), plane_norm_wrt_vo))
+    if plane_left_wrt_vo is None:
+        return
+    plane_up_wrt_vo = normalize(numpy.cross(plane_norm_wrt_vo, plane_left_wrt_vo))
+    if plane_up_wrt_vo is None:
+        return
+
+    plane_up_wrt_vo = plane_up_wrt_vo * sz_meters
+    plane_left_wrt_vo = plane_left_wrt_vo * sz_meters
+
+    vertices = (
+        plane_wrt_vo + plane_left_wrt_vo - plane_up_wrt_vo,
+        plane_wrt_vo + plane_left_wrt_vo + plane_up_wrt_vo,
+        plane_wrt_vo - plane_left_wrt_vo + plane_up_wrt_vo,
+        plane_wrt_vo - plane_left_wrt_vo - plane_up_wrt_vo,
+        )
+
+    indices = (0, 1, 2, 0, 2, 3)
+
+    glBegin(GL_TRIANGLES)
+    for index in indices:
+        glVertex3fv(vertices[index])
+    glEnd()
+
+def draw_routine(width, height, image_1, image_2, program):
+    """OpenGL Draw"""
+    rect_sz_meters = 7
+    rect_stitching_distance_meters = 2.0
+
+    vo_T_body = image_1.vision_T_body.to_matrix()
+
+    eye_wrt_body = proto_vec_T_numpy(image_1.body_T_image_sensor.position) \
+                 + proto_vec_T_numpy(image_2.body_T_image_sensor.position)
+
+    # Add the two real camera norms together to get the fake camera norm.
+    eye_norm_wrt_body = numpy.array(image_1.body_T_image_sensor.rot.transform_point(0, 0, 1)) \
+                      + numpy.array(image_2.body_T_image_sensor.rot.transform_point(0, 0, 1))
+
+     # Make the virtual camera centered.
+    eye_wrt_body[1] = 0
+    eye_norm_wrt_body[1] = 0
+
+    # Make sure our normal has length 1
+    eye_norm_wrt_body = normalize(eye_norm_wrt_body)
+
+    plane_wrt_body = eye_wrt_body + eye_norm_wrt_body * rect_stitching_distance_meters
+
+    plane_wrt_vo = mat4mul3(vo_T_body, plane_wrt_body)
+    plane_norm_wrt_vo = mat4mul3(vo_T_body, eye_norm_wrt_body, 0)
+
+    eye_wrt_vo = mat4mul3(vo_T_body, eye_wrt_body)
+    up_wrt_vo = mat4mul3(vo_T_body, numpy.array([0, 0, 1]), 0)
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(110, (width/height), 0.1, 50.0)
+
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    gluLookAt(eye_wrt_vo[0], eye_wrt_vo[1], eye_wrt_vo[2], \
+              plane_wrt_vo[0], plane_wrt_vo[1], plane_wrt_vo[2], \
+              up_wrt_vo[0], up_wrt_vo[1], up_wrt_vo[2])
+
+    program.use()
+    program.set_camera1_mvp(image_1.MVP)
+    program.set_camera2_mvp(image_2.MVP)
+    program.set_image1_texture(image_1.image)
+    program.set_image2_texture(image_2.image)
+
+    draw_geometry(plane_wrt_vo, plane_norm_wrt_vo, rect_sz_meters)
+
+def stitch_GS8(image_1, image_2, vert_shader, frag_shader):
+    """Stitch two front fisheye images together"""
+    program = CompiledShader(vert_shader, frag_shader)
+
+    fbo = glGenFramebuffers(1)
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+    texture = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 960, 640, 0, GL_RED, GL_UNSIGNED_BYTE, None)
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE2D, texture, 0)
+    glClearColor(0, 0, 255, 0)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+    draw_routine(960.0, 640.0, image_1, image_2, program)
+
+    # TODO: Extract image from OpenGL texture
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    data = glReadPixels(0, 0, 960, 640, GL_RED, GL_UNSIGNED_BYTE)
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    return data
+
+def stitch_Depth18(image_1, image_2, vert_shader, frag_shader):
+    """Stitch two front fisheye images together"""
+    program = CompiledShader(vert_shader, frag_shader)
+
+    fbo = glGenFramebuffers(1)
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+    texture = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, 960, 640, 0, GL_RED, GL_UNSIGNED_SHORT, None)
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE2D, texture, 0)
+    glClearColor(0, 0, 255, 0)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+    draw_routine(960.0, 640.0, image_1, image_2, program)
+
+    # TODO: Extract image from OpenGL texture
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    data = glReadPixels(0, 0, 960, 640, GL_RED, GL_UNSIGNED_SHORT)
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    return data
+
 if __name__ == '__main__':
+    with open('shader_vert.glsl', 'r') as file:
+        vert_shader = file.read()
+    with open('shader_frag.glsl', 'r') as file:
+        frag_shader = file.read()
+
     spot = Spot()
 
     try:
@@ -200,6 +337,8 @@ if __name__ == '__main__':
                 if source[5:17] == 'left_fisheye':
                     front_fisheyes.append(img)
                 if len(front_fisheyes) == 2:
+                    data = stitch_greyscale8(front_fisheyes[0], front_fisheyes[1], vert_shader, frag_shader)
+                    '''
                     stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
                     try:
                         (status, stitched) = stitcher.stitch(front_fisheyes)
@@ -213,6 +352,7 @@ if __name__ == '__main__':
                             print('Failed to stitch front fisheye images')
                     except Exception as e:
                         print(f'Exception on stitching front fisheye images: {e}')
+                    '''
                     front_fisheyes = []
 
                 if source[5:16] == 'right_depth':
@@ -220,6 +360,8 @@ if __name__ == '__main__':
                 if source[5:15] == 'left_depth':
                     front_depths.append(img)
                 if len(front_depths) == 2:
+                    data = stitch_depth16(front_depths[0], front_depths[1], vert_shader, frag_shader)
+                    '''
                     stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
                     try:
                         (status, stitched) = stitcher.stitch(front_depths)
@@ -233,6 +375,7 @@ if __name__ == '__main__':
                             print('Failed to stitch front depth images')
                     except Exception as e:
                         print(f'Exception on stitching front depth images: {e}')
+                    '''
                     front_depths = []
 
             elif source[0:5] == 'right':
