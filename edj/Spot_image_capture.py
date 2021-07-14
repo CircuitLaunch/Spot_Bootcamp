@@ -64,13 +64,17 @@ if __name__ == '__main__':
             if source[0:5] == 'front':
                 print('Rotating front image')
                 img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+                print('1')
                 if source[5:18] == 'right_fisheye':
                     frontleft_fisheye_img = img
+                print('2')
                 if source[5:17] == 'left_fisheye':
                     frontright_fisheye_img = img
+                print('3')
                 if frontleft_fisheye_img != None and frontright_fisheye_img != None:
                     stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
                     (status, stitched) = stitcher.stitch([frontleft_fisheye_img, frontright_fisheye_img])
+                    print('4')
                     if status == 0:
                         filename = f'front_fisheye_stitched.jpg'
                         try:
@@ -79,13 +83,17 @@ if __name__ == '__main__':
                             print(f'Failed to write {filename}')
                     else:
                         print('Failed to stitch front fisheye images')
+                print('5')
                 if source[5:16] == 'right_depth':
                     frontleft_depth_img = img
+                print('6')
                 if source[5:15] == 'left_depth':
                     frontright_depth_img = img
+                print('7')
                 if frontleft_depth_img != None and frontright_depth_img != None:
                     stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
                     (status, stitched) = stitcher.stitch([frontleft_depth_img, frontright_depth_img])
+                    print('8')
                     if status == 0:
                         filename = f'front_depth_stitched.jpg'
                         try:
