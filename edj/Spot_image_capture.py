@@ -231,7 +231,8 @@ def stitch_greyscale8(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
     print('Compiling shaders')
     program = CompiledShader(vert_shader, frag_shader)
-
+    print('Success')
+    
     fbo = glGenFramebuffers(1)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo)
     texture = glGenTextures(1)
@@ -255,6 +256,7 @@ def stitch_depth18(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
     print('Compiling shaders')
     program = CompiledShader(vert_shader, frag_shader)
+    print('Success')
 
     fbo = glGenFramebuffers(1)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo)
