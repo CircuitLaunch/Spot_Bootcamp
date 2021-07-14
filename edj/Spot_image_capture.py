@@ -4,7 +4,7 @@ from Spot import *
 import time
 
 if __name__ == '__main__':
-    spot = Spot()
+    spot = Spot(trace_level=2)
 
     list = ['right_fisheye_image', 'right_depth', 'left_fisheye_image', 'left_depth', 'frontright_fisheye_image', 'frontright_depth', 'frontleft_fisheye_image', 'frontleft_depth', 'back_fisheye_image', 'back_depth']
     images = spot.get_images(list)
