@@ -32,7 +32,7 @@ if __name__ == '__main__':
         else:
             img = cv2.imdecode(img, -1)
 
-        filename = f'{source}.jpg'
+        filename = f'{source}.png'
         cv2.imwrite(filename, img)
 
     print('Trying to make Python GC the Spot object')
