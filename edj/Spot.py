@@ -1,5 +1,5 @@
 import time
-from bosdyn.api import robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
+from bosdyn.api import robot_state_pb2, robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
 from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
 import bosdyn.client
@@ -48,7 +48,7 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            battery_state = bosdyn.api.robot_status_pb2.BatteryState(self.spot_state.battery_states)
+            battery_state = robot_state_pb2.BatteryState(self.spot_state.battery_states)
             charge = battery_state.charge_percentage.value
             voltage = battery_state.voltage.value
             temperatures = battery_state.temperatures
