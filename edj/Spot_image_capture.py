@@ -68,8 +68,10 @@ if __name__ == '__main__':
                 cv2.imwrite(filename, img)
             except:
                 print(f'Failed to write {filename}')
+    except ValueError as e:
+        print(f'ValueError {e}')
     except:
-        print('Exception')
+        print('Unknown exception')
 
     print('Trying to make Python GC the Spot object')
     spot = None

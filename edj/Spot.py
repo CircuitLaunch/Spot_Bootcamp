@@ -37,7 +37,7 @@ class Spot:
             major = self.spot_id.software_release.version.major_version
             minor = self.spot_id.software_release.version.minor_version
             patch = self.spot_id.software_release.version.patch_level
-            print(f'{species} s//n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
+            print(f'{species} s/n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
 
         # Log into the robot
         self.robot.authenticate(username, password)
@@ -53,7 +53,7 @@ class Spot:
                 charge = battery_state.charge_percentage.value
                 voltage = battery_state.voltage.value
                 temperatures = battery_state.temperatures
-                print(f'Battery {id} charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
+                print(f'Battery {id} charge: {charge}, voltage: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
         self.estop_client = self.robot.ensure_client('estop')
