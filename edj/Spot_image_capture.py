@@ -227,7 +227,7 @@ def draw_routine(width, height, image_1, image_2, program):
 
     draw_geometry(plane_wrt_vo, plane_norm_wrt_vo, rect_sz_meters)
 
-def stitch_GS8(image_1, image_2, vert_shader, frag_shader):
+def stitch_greyscale8(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
     program = CompiledShader(vert_shader, frag_shader)
 
@@ -250,7 +250,7 @@ def stitch_GS8(image_1, image_2, vert_shader, frag_shader):
 
     return data
 
-def stitch_Depth18(image_1, image_2, vert_shader, frag_shader):
+def stitch_depth18(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
     program = CompiledShader(vert_shader, frag_shader)
 
