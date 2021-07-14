@@ -6,12 +6,15 @@ import time
 if __name__ == '__main__':
     spot = Spot()
 
-    # It's ALIVE!
-    spot.power_on()
+    try:
+        # It's ALIVE!
+        spot.power_on()
 
-    # Power down
-    spot.estop(graceful=True)
-
+        # Power down
+        spot.estop(graceful=True)
+    except:
+        print('Exception')
+        
     print('Trying to make Python GC the Spot object')
     spot = None
     time.sleep(5.0)

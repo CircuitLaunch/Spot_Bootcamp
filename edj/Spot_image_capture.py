@@ -11,7 +11,7 @@ if __name__ == '__main__':
     spot = Spot()
 
     try:
-        list = ['right_fisheye_image', 'right_depth_in_visual_frame', 'left_fisheye_image', 'left_depth', 'frontright_fisheye_image', 'frontright_depth', 'frontleft_fisheye_image', 'frontleft_depth', 'back_fisheye_image', 'back_depth']
+        list = ['right_fisheye_image', 'right_depth_in_visual_frame', 'left_fisheye_image', 'left_depth_in_visual_frame', 'frontright_fisheye_image', 'frontright_depth_in_visual_frame', 'frontleft_fisheye_image', 'frontleft_depth_in_visual_frame', 'back_fisheye_image', 'back_depth_in_visual_frame']
         images = spot.get_images(list)
         image_dict = dict(zip(list, images))
 
@@ -28,7 +28,6 @@ if __name__ == '__main__':
                 dtype = np.uint8
 
             img = np.fromstring(image.data, dtype=dtype)
-            print(img)
             if image.pixel_format == image_pb2.Image.FORMAT_RAW:
                 img = img.reshape(image.rows, image.cols)
             elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
@@ -36,9 +35,11 @@ if __name__ == '__main__':
             else:
                 img = cv2.imdecode(img, cv2.IMREAD_ANYCOLOR)
 
-            print(img)
             filename = f'{source}.png'
-            cv2.imwrite(filename, img)
+            try:
+                cv2.imwrite(filename, img)
+            except:
+                print(f'Failed to write {filename}')
     except:
         print('Exception')
 
