@@ -29,8 +29,10 @@ if __name__ == '__main__':
         img = np.fromstring(image.data, dtype=dtype)
         print(img)
         if image.pixel_format == image_pb2.Image.FORMAT_RAW:
+            print('Reshaping')
             img = img.reshape(image.rows, image.cols)
         else:
+            print('Decoding')
             img = cv2.imdecode(img, -1)
 
         print(img)
