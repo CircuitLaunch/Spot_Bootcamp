@@ -6,43 +6,42 @@ import time
 if __name__ == '__main__':
     spot = Spot()
 
-    with spot.lease:
-        # It's ALIVE!
-        spot.power_on()
+    # It's ALIVE!
+    spot.power_on()
 
-        # Strike some poses
-        spot.stand()
-        time.sleep(5.0)
+    # Strike some poses
+    spot.stand()
+    time.sleep(5.0)
 
-        for i in range(4):
-            spot.pose(yaw=0.25)
-            time.sleep(1.0)
-            spot.pose(yaw=-0.25)
-            time.sleep(1.0)
-
-        spot.pose(yaw=0.0)
+    for i in range(4):
+        spot.pose(yaw=0.25)
+        time.sleep(1.0)
+        spot.pose(yaw=-0.25)
         time.sleep(1.0)
 
-        for i in range(4):
-            spot.pose(roll=0.25)
-            time.sleep(1.0)
-            spot.pose(roll=-0.25)
-            time.sleep(1.0)
+    spot.pose(yaw=0.0)
+    time.sleep(1.0)
 
-        spot.pose(roll=0.0)
+    for i in range(4):
+        spot.pose(roll=0.25)
+        time.sleep(1.0)
+        spot.pose(roll=-0.25)
         time.sleep(1.0)
 
-        for i in range(4):
-            spot.pose(pitch=0.25)
-            time.sleep(1.0)
-            spot.pose(pitch=-0.25)
-            time.sleep(1.0)
+    spot.pose(roll=0.0)
+    time.sleep(1.0)
 
-        spot.pose(pitch=0.0)
+    for i in range(4):
+        spot.pose(pitch=0.25)
+        time.sleep(1.0)
+        spot.pose(pitch=-0.25)
         time.sleep(1.0)
 
-        # Power down
-        spot.estop(graceful=True)
+    spot.pose(pitch=0.0)
+    time.sleep(1.0)
+
+    # Power down
+    spot.estop(graceful=True)
 
     print('Trying to make Python GC the Spot object')
     spot = None
