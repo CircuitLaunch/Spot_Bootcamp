@@ -10,6 +10,9 @@ from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient,
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.client.image import ImageClient
 from bosdyn.util import seconds_to_duration
+from bosdyn.client.recording import GraphNavRecordingServiceClient
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
+from bosdyn.client import math_helpers
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
@@ -43,7 +46,7 @@ class Spot:
         self.robot.authenticate(username, password)
 
         # Get the robot state
-        self.state_client = self.robot.ensure_client('robot-state')
+        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
         self.spot_state = self.state_client.get_robot_state()
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
@@ -96,6 +99,12 @@ class Spot:
 
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
+
+        self.graph_nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        self.current_graph = None
+        self.current_edges {}
+        self.current_waypoint_snapshots = {}
+        self.current_annotation_name_to_wp_id = {}
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -237,3 +246,19 @@ class Spot:
 
     def get_images(self, sources, wait=True):
         return self.image_client.get_image_from_sources(sources)
+
+    # Thanks to Brad "Duke Tresnor" Armstrong for figuring out trajectory locomotion
+    @property
+    def vision_tform_body(self):
+        return get_vision_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot)
+
+    def move_to(self, x, y, z, rot_quat, duration=30.0, wait=True):
+        body_tform_goal = math_helpers.SE3Pose(x=x, y=y, z=z, rot=rot_quat)
+        new_tform = self.vision_tform_body * body_tform_goal
+        cmd = RobotCommandBuilder.synchro_se2_trajectory_point_command(goal_x=new_tform.x,
+                        goal_y=new_tform.y, goal_heading=new_tform.rot.to_yaw(),
+                        frame_name=VISION_FRAME_NAME)
+        cmd_status = self.command_client.robot_command(cmd, end_time_secs=time.time() + duration)
+        return cmd_status
+
+    

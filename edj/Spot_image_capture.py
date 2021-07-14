@@ -23,6 +23,7 @@ from PIL import Image
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, get_vision_tform_body, get_a_tform_b
 from ctypes import *
 
+'''
 class ImagePreppedForOpenGL():
     """Prep image for OpenGL from Spot image_response."""
     def extract_image(self, image_response):
@@ -277,6 +278,7 @@ def stitch_depth18(image_1, image_2, vert_shader, frag_shader):
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     return data
+'''
 
 if __name__ == '__main__':
     with open('shader_vert.glsl', 'r') as file:
@@ -338,7 +340,7 @@ if __name__ == '__main__':
             if source[0:5] == 'front':
                 print('Rotating front image')
                 img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
-
+                '''
                 if source[5:18] == 'right_fisheye':
                     front_fisheyes.append(img)
                 if source[5:17] == 'left_fisheye':
@@ -360,7 +362,7 @@ if __name__ == '__main__':
                     if data != None:
                         print('Success!')
                     front_depths = []
-
+                '''
             elif source[0:5] == 'right':
                 print('Rotating right image')
                 img = cv2.rotate(img, cv2.ROTATE_180)
