@@ -18,7 +18,7 @@ class Spot:
     def __init__(self, project='custom_project', ip='192.168.50.3', username='student_HSD', password='dgHGcrD43SCgl', trace_level=1):
         self.trace_level = trace_level
         if trace_level >= 1:
-            print('Spot module instantiated')
+            print('Bringing Spot Up')
         # Create an sdk object (the name is arbitrary)
         self.sdk = bosdyn.client.create_standard_sdk(project)
 
@@ -28,8 +28,10 @@ class Spot:
         # Get the client ID
         self.id_client = self.robot.ensure_client('robot-id')
         self.spot_id = self.id_client.get_id()
-        if trace_level >= 1:
+        if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
+        else:
+            print(f'Spot s//n: {self.spot_id.serial_number}, hw version: {self.spot_id.version}, sw version: {self.spot_id.software_release.version.major_version}.{self.spot_id.software_release.version.minor_version} (patch level {self.spot_id.software_release.version.patch_level})'
 
         # Log into the robot
         self.robot.authenticate(username, password)
@@ -39,6 +41,8 @@ class Spot:
         self.spot_state = self.state_client.get_robot_state()
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
+        else:
+            pass
 
         # Create an estop client and get the estop status
         self.estop_client = self.robot.ensure_client('estop')
