@@ -631,6 +631,19 @@ def main():
     sdk = create_standard_sdk('FollowFiducialClient')
     robot = sdk.create_robot(options.hostname)
 
+    # --- E-stop --- 
+    estop_client = robot.ensure_client('estop')
+
+    estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
+
+    estop_endpoint.force_simple_setup()
+
+    estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
+    # --- End of E-stop ---
+
+
+
+
     fiducial_follower = None
     image_viewer = None
     try:
@@ -663,25 +676,6 @@ def main():
 
 
 if __name__ == "__main__":
-    
-    # --- E-stop --- 
-    estop_client = robot.ensure_client('estop')
-
-    estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
-
-    estop_endpoint.force_simple_setup()
-
-    estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
-    # --- End of E-stop ---
-    
-    
+ 
     if not main():
         sys.exit(1)
-
-    © 2021 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-
