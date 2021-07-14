@@ -631,15 +631,7 @@ def main():
     sdk = create_standard_sdk('FollowFiducialClient')
     robot = sdk.create_robot(options.hostname)
 
-    # --- E-stop --- 
-    estop_client = robot.ensure_client('estop')
 
-    estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
-
-    estop_endpoint.force_simple_setup()
-
-    estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
-    # --- End of E-stop ---
 
 
 
@@ -650,6 +642,13 @@ def main():
         with Exit():
             robot.authenticate(options.username, options.password)
             robot.start_time_sync()
+
+            # --- E-stop --- 
+            estop_client = robot.ensure_client('estop')
+            estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
+            estop_endpoint.force_simple_setup()
+            estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
+            # --- End of E-stop ---
 
             # Verify the robot is not estopped.
             assert not robot.is_estopped(), "Robot is estopped. " \
