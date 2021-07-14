@@ -38,8 +38,9 @@ from bosdyn.client.robot_state import RobotStateClient
 import bosdyn.client.util
 from bosdyn.client.world_object import WorldObjectClient
 
-# ?????
-# from bosdyn.client.estop import EstopClient
+
+from bosdyn.client.estop import EstopClient
+from bosdyn.client.estop import is_estopped
 
 #pylint: disable=no-member
 LOGGER = logging.getLogger()
@@ -58,18 +59,6 @@ class FollowFiducial(object):
         self._robot_state_client = robot.ensure_client(RobotStateClient.default_service_name)
         self._robot_command_client = robot.ensure_client(RobotCommandClient.default_service_name)
         self._world_object_client = robot.ensure_client(WorldObjectClient.default_service_name)
-
-        '''
-        # --- E-stop ---
-        estop_client = robot.ensure_client('estop')
-
-        estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
-
-        estop_endpoint.force_simple_setup()
-
-        estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
-        # --- End of E-stop ---
-        '''
 
 
         # Stopping Distance (x,y) offset from the tag and angle offset from desired angle.
@@ -649,6 +638,8 @@ def main():
             estop_endpoint.force_simple_setup()
             estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(estop_endpoint)
             # --- End of E-stop ---
+
+
 
             # Verify the robot is not estopped.
             assert not robot.is_estopped(), "Robot is estopped. " \
