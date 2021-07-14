@@ -20,6 +20,8 @@ if __name__ == '__main__':
             print('\tdepth_16')
         elif image.pixel_format == image_pb2.Image.FORMAT_RAW:
             print('\traw_8')
+        else:
+            print('\trgb_8')
 
     print('Trying to make Python GC the Spot object')
     spot = None
