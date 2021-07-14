@@ -6,14 +6,16 @@ import time
 if __name__ == '__main__':
     spot = Spot()
 
-    # It's ALIVE!
-    spot.power_on()
+    with spot.lease:
 
-    spot.belly_rub(direction=BELLY_RUB_RIGHT)
-    time.sleep(10.0)
+        # It's ALIVE!
+        spot.power_on()
 
-    # Power down
-    spot.estop(graceful=True)
+        spot.belly_rub(direction=BELLY_RUB_RIGHT)
+        time.sleep(10.0)
+
+        # Power down
+        spot.estop(graceful=True)
 
     print('Trying to make Python GC the Spot object')
     spot = None

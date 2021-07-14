@@ -7,23 +7,11 @@ if __name__ == '__main__':
     spot = Spot()
 
     with spot.lease:
+
         # It's ALIVE!
         spot.power_on()
 
-        # Strike some poses
-        spot.stand()
-        time.sleep(5.0)
-
-        spot.belly_rub(direction=BELLY_RUB_RIGHT)
-        time.sleep(10.0)
-
-        spot.power_on()
-
-        spot.self_right()
-        time.sleep(10.0)
-
-        spot.stand()
-        time.sleep(5.0)
+        print(f'Image sources: \n{spot.list_image_sources()}')
 
         # Power down
         spot.estop(graceful=True)
