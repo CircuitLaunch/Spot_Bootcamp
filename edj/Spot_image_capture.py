@@ -21,6 +21,7 @@ if __name__ == '__main__':
             print(f'\twidth: {image.cols}')
             print(f'\theight: {image.rows}')
             num_bytes = 1
+            print('WTF?!?')
             if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
                 print('\tformat: depth_16')
                 dtype = np.uint16
