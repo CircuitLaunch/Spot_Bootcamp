@@ -74,6 +74,8 @@ if __name__ == '__main__':
                             cv2.imwrite(filename, stitched)
                         except:
                             print(f'Failed to write {filename}')
+                    else:
+                        print('Failed to stitch front images')
 
 
             elif source[0:5] == 'right':
