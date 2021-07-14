@@ -27,7 +27,7 @@ if __name__ == '__main__':
             dtype = np.uint8
 
         img = np.fromstring(image.data, dtype=dtype)
-        print img
+        print(img)
         if image.pixel_format == image_pb2.Image.FORMAT_RAW:
             img = img.reshape(image.rows, image.cols)
         else:
