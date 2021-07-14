@@ -33,7 +33,7 @@ if __name__ == '__main__':
         elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
             img = cv2.imdecode(img, cv2.IMREAD_ANYDEPTH)
         else:
-            img = cv2.imdecode(img, -1)
+            img = cv2.imdecode(img, cv2.IMREAD_ANYCOLOR)
 
         print(img)
         filename = f'{source}.png'
