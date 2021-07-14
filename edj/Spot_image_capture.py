@@ -32,11 +32,11 @@ if __name__ == '__main__':
         else:
             img = cv2.imdecode(img, -1)
 
-        if not img.empty():
+        if img.data == None:
+            print('Failed to save empty image')
+        else:
             filename = f'{source}.png'
             cv2.imwrite(filename, img)
-        else:
-            print('Failed to write empty image')
 
     print('Trying to make Python GC the Spot object')
     spot = None
