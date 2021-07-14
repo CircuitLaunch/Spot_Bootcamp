@@ -38,6 +38,8 @@ if __name__ == '__main__':
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U16:
                     print('\tformat: gs_u16')
                     num_bytes = 2
+                else:
+                    print('\tformat: unknown')
                 dtype = np.uint8
                 extension = '.jpg'
 

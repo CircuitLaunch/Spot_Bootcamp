@@ -55,6 +55,8 @@ class Spot:
         # Spot will be estopped at this point
 
         # To clear the estop, you must establish a keep-alive
+        if trace_level >= 1:
+            print('Establishing estop keep-alive')
         self.estop_keep_alive = bosdyn.client.estop.EstopKeepAlive(self.estop_endpoint)
         spot_estop_status = self.estop_client.get_status()
         if trace_level >= 2:
@@ -63,7 +65,7 @@ class Spot:
         # List current leases
         self.lease_client = self.robot.ensure_client('lease')
         spot_lease_list = self.lease_client.list_leases()
-        if trace_level >= 1:
+        if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
 
         # To obtain a lease
@@ -72,8 +74,10 @@ class Spot:
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
         self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
-        if trace_level >= 1:
+        if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
+        elif trace_level >= 1:
+            print('Lease acquired')
 
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
