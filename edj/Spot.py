@@ -96,8 +96,7 @@ class Spot:
 
     @property
     def lease(self):
-        self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
-        return self.lease_keep_alive
+        return bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
 
     def power_on(self):
         # Powering Spot on
