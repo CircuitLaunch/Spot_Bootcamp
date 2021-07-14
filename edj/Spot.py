@@ -176,6 +176,6 @@ class Spot:
 
     def list_image_sources(self, wait=True):
         return self.image_client.list_image_sources()
-        
+
     def get_images(self, sources, wait=True):
-        return self.image_client.get_image_from_sources([sources])
+        return self.image_client.get_image_from_sources(sources)
