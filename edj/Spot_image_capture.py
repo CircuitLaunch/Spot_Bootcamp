@@ -337,22 +337,10 @@ if __name__ == '__main__':
                 if source[5:17] == 'left_fisheye':
                     front_fisheyes.append(img)
                 if len(front_fisheyes) == 2:
+                    print('Stitching front fisheyes')
                     data = stitch_greyscale8(front_fisheyes[0], front_fisheyes[1], vert_shader, frag_shader)
-                    '''
-                    stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
-                    try:
-                        (status, stitched) = stitcher.stitch(front_fisheyes)
-                        if status == 0:
-                            filename = f'front_fisheye_stitched.jpg'
-                            try:
-                                cv2.imwrite(filename, stitched)
-                            except:
-                                print(f'Failed to write {filename}')
-                        else:
-                            print('Failed to stitch front fisheye images')
-                    except Exception as e:
-                        print(f'Exception on stitching front fisheye images: {e}')
-                    '''
+                    if data != None:
+                        print('Success!')
                     front_fisheyes = []
 
                 if source[5:16] == 'right_depth':
@@ -360,22 +348,10 @@ if __name__ == '__main__':
                 if source[5:15] == 'left_depth':
                     front_depths.append(img)
                 if len(front_depths) == 2:
+                    print('Stitching front depths')
                     data = stitch_depth16(front_depths[0], front_depths[1], vert_shader, frag_shader)
-                    '''
-                    stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
-                    try:
-                        (status, stitched) = stitcher.stitch(front_depths)
-                        if status == 0:
-                            filename = f'front_depth_stitched.jpg'
-                            try:
-                                cv2.imwrite(filename, stitched)
-                            except:
-                                print(f'Failed to write {filename}')
-                        else:
-                            print('Failed to stitch front depth images')
-                    except Exception as e:
-                        print(f'Exception on stitching front depth images: {e}')
-                    '''
+                    if data != None:
+                        print('Success!')
                     front_depths = []
 
             elif source[0:5] == 'right':
