@@ -2,6 +2,7 @@ import time
 from bosdyn.api import robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
 from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
+import bosdyn.api.BatteryState
 import bosdyn.client
 import bosdyn.client.lease
 import bosdyn.client.util
