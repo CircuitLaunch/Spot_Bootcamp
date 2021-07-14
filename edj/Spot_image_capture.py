@@ -18,7 +18,7 @@ if __name__ == '__main__':
         print(f'From source: {source}')
         image = image_result.shot.image
         print(f'\twidth: {image.cols}')
-        print(f'\theight: {image.rows})
+        print(f'\theight: {image.rows}')
         if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
             print('\tformat: depth_16')
             dtype = np.uint16
