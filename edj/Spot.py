@@ -31,7 +31,13 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
         else:
-            print(f'Spot s//n: {self.spot_id.serial_number}, hw version: {self.spot_id.version}, sw version: {self.spot_id.software_release.version.major_version}.{self.spot_id.software_release.version.minor_version} (patch level {self.spot_id.software_release.version.patch_level})')
+            species = self.spot_id.species
+            serial_number = self.spot_id.serial_number
+            hw_version = self.spot_id.version
+            major = self.spot_id.software_release.version.major_version
+            minor = self.spot_id.software_release.version.minor_version
+            patch = self.spot_id.software_release.version.patch_level
+            print(f'{species} s//n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
 
         # Log into the robot
         self.robot.authenticate(username, password)
@@ -42,7 +48,10 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            pass
+            charge = self.spot_state.battery_states.value.charge_percentage
+            voltage = self.spot_state.battery_states.voltage.value
+            temperatures = self.spot_state.battery_states.temperatures
+            print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
         self.estop_client = self.robot.ensure_client('estop')
