@@ -26,13 +26,13 @@ if __name__ == '__main__':
                 dtype = np.uint16
                 extension = '.png'
             else:
-                if image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGB_U8:
+                if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGB_U8:
                     num_bytes = 3
-                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGBA_U8:
+                elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGBA_U8:
                     num_bytes = 4
-                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U8:
+                elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U8:
                     num_bytes = 1
-                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U16:
+                elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U16:
                     num_bytes = 2
                 dtype = np.uint8
                 extension = '.jpg'
