@@ -8,6 +8,22 @@ import numpy as np
 import imutils
 import cv2
 
+import OpenGL
+import bosdyn.api
+import bosdyn.client.util
+import io
+import os
+import pygame
+import sys
+
+from OpenGL.GL import *
+from OpenGL.GL import shaders, GL_VERTEX_SHADER
+from OpenGL.GLU import *
+from PIL import Image
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, get_vision_tform_body, get_a_tform_b
+from ctypes import *
+from pygame.locals import *
+
 if __name__ == '__main__':
     spot = Spot()
 
