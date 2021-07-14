@@ -27,16 +27,18 @@ if __name__ == '__main__':
                 extension = '.png'
             else:
                 if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGB_U8:
-                    print('\tformat: rgb_u8')
+                    print('\tpixel_format: rgb_u8')
                     num_bytes = 3
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGBA_U8:
-                    print('\tformat: rgba_u8')
+                    print('\tpixel_format: rgba_u8')
                     num_bytes = 4
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U8:
-                    print('\tformat: gs_u8')
+                    print('\tpixel_format: gs_u8')
                     num_bytes = 1
                 elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_UNKNOWN:
-                    print('\tformat: unknown')
+                    print('\tpixel_format: unknown')
+                else:
+                    print('\tpixel_format: {image.pixel_format}')
                 dtype = np.uint8
                 extension = '.jpg'
 
