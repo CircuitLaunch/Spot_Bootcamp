@@ -48,7 +48,7 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            battery_state = self.spot_state.battery_states as bosdyn.api.BattryState
+            battery_state = bosdyn.api.BatteryState(self.spot_state.battery_states)
             charge = battery_state.charge_percentage.value
             voltage = battery_state.voltage.value
             temperatures = battery_state.temperatures
