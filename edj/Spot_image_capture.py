@@ -42,10 +42,9 @@ if __name__ == '__main__':
                 dtype = np.uint8
                 extension = '.jpg'
 
-            print(f'Image format: {image.format}')
             print('Extracting image from buffer')
             img = np.frombuffer(image.data, dtype=dtype)
-            if image.pixel_format == image_pb2.Image.FORMAT_RAW:
+            if image.format == image_pb2.Image.FORMAT_RAW:
                 try:
                     print('Reshaping raw image')
                     img = img.reshape(image.rows, image.cols, num_bytes)
