@@ -4,7 +4,9 @@ from Spot import *
 import time
 
 if __name__ == '__main__':
-    spot = Spot(trace_level=5)
+    spot = Spot(trace_level=0)
+
+    spot.report(trace_level=1)
 
     print('Trying to make Python GC the Spot object')
     spot = None
