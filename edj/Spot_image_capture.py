@@ -20,22 +20,38 @@ if __name__ == '__main__':
             image = image_result.shot.image
             print(f'\twidth: {image.cols}')
             print(f'\theight: {image.rows}')
+            num_bytes = 1
             if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
                 print('\tformat: depth_16')
                 dtype = np.uint16
+                extension = '.png'
             else:
-                print('\tformat: rgb_8')
+                if image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGB_U8:
+                    num_bytes = 3
+                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_RGBA_U8:
+                    num_bytes = 4
+                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U8:
+                    num_bytes = 1
+                elif image.shot.image.pixel_format == image_pb2.Image.PIXEL_FORMAT_GREYSCALE_U16:
+                    num_bytes = 2
                 dtype = np.uint8
+                extension = '.jpg'
 
-            img = np.fromstring(image.data, dtype=dtype)
+            img = np.frombuffer(image.data, dtype=dtype)
             if image.pixel_format == image_pb2.Image.FORMAT_RAW:
-                img = img.reshape(image.rows, image.cols)
-            elif image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
-                img = cv2.imdecode(img, cv2.IMREAD_ANYDEPTH)
+                try:
+                    img = img.reshape(image.rows, image.cols, num_bytes)
+                except ValueError:
+                    img = cv2.imdecode(img, -1)
             else:
-                img = cv2.imdecode(img, cv2.IMREAD_ANYCOLOR)
+                img = cv2.imdecode(img, -1)
 
-            filename = f'{source}.png'
+            if source[0:5] == 'front':
+                img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            elif source[0:5] == 'right':
+                img = cv2.rotate(img, cv2.ROTATE_180)
+
+            filename = f'{source}{extension}'
             try:
                 cv2.imwrite(filename, img)
             except:
