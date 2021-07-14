@@ -63,14 +63,16 @@ class Spot:
         # List current leases
         self.lease_client = self.robot.ensure_client('lease')
         spot_lease_list = self.lease_client.list_leases()
-        if trace_level >= 2:
+        if trace_level >= 1:
             print(f'Spot lease list:\n{spot_lease_list}')
 
         # To obtain a lease
+        if trace_level >= 1:
+            print('Attempting to acquire lease')
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
         self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
-        if trace_level >= 2:
+        if trace_level >= 1:
             print(f'Spot lease list:\n{spot_lease_list}')
 
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
@@ -98,7 +100,7 @@ class Spot:
     def lease(self):
         self.lease = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
     '''
-    
+
     def power_on(self):
         # Powering Spot on
         self.robot.power_on(timeout_sec=20)
