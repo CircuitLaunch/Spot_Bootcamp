@@ -48,7 +48,7 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            charge = self.spot_state.battery_states.value.charge_percentage
+            charge = self.spot_state.battery_states.charge_percentage.value
             voltage = self.spot_state.battery_states.voltage.value
             temperatures = self.spot_state.battery_states.temperatures
             print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
@@ -129,7 +129,7 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            charge = self.spot_state.battery_states.value.charge_percentage
+            charge = self.spot_state.battery_states.charge_percentage.value
             voltage = self.spot_state.battery_states.voltage.value
             temperatures = self.spot_state.battery_states.temperatures
             print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
