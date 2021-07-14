@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 from Spot import *
-
 from bosdyn.api import image_pb2
 
 import time
+import numpy as np
+import cv2
 
 if __name__ == '__main__':
     spot = Spot()
@@ -16,12 +17,23 @@ if __name__ == '__main__':
     for source, image_result in image_dict.items():
         print(f'From source: {source}')
         image = image_result.shot.image
+        print(f'\twidth: {image.cols}')
+        print(f'\theight: {image.rows})
         if image.pixel_format == image_pb2.Image.PIXEL_FORMAT_DEPTH_U16:
-            print('\tdepth_16')
-        elif image.pixel_format == image_pb2.Image.FORMAT_RAW:
-            print('\traw_8')
+            print('\tformat: depth_16')
+            dtype = np.uint16
         else:
-            print('\trgb_8')
+            print('\tformat: rgb_8')
+            dtype = np.uint8
+
+        img = np.fromstring(image.data, dtype=dtype)
+        if image.pixel_format == image_pb2.Image.FORMAT_RAW:
+            img = img.reshape(image.rows, image.cols)
+        else:
+            img = cv2.imdecode(img, -1)
+
+        filename = f'{source}.jpg'
+        cv2.imwrite(filename, img)
 
     print('Trying to make Python GC the Spot object')
     spot = None
