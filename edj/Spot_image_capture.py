@@ -229,6 +229,7 @@ def draw_routine(width, height, image_1, image_2, program):
 
 def stitch_greyscale8(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
+    print('Compiling shaders')
     program = CompiledShader(vert_shader, frag_shader)
 
     fbo = glGenFramebuffers(1)
@@ -252,6 +253,7 @@ def stitch_greyscale8(image_1, image_2, vert_shader, frag_shader):
 
 def stitch_depth18(image_1, image_2, vert_shader, frag_shader):
     """Stitch two front fisheye images together"""
+    print('Compiling shaders')
     program = CompiledShader(vert_shader, frag_shader)
 
     fbo = glGenFramebuffers(1)
