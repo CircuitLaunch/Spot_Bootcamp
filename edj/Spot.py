@@ -100,12 +100,14 @@ class Spot:
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
 
+        '''
         self.graph_nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
-
+        '''
+        
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
 
