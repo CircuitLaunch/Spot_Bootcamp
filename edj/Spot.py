@@ -102,7 +102,7 @@ class Spot:
 
         self.graph_nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
         self.current_graph = None
-        self.current_edges {}
+        self.current_edges = {}
         self.current_waypoint_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
 
@@ -260,5 +260,3 @@ class Spot:
                         frame_name=VISION_FRAME_NAME)
         cmd_status = self.command_client.robot_command(cmd, end_time_secs=time.time() + duration)
         return cmd_status
-
-    
