@@ -112,6 +112,37 @@ class Spot:
         if self.trace_level >= 1:
             print('Spot module going out of scope')
 
+    def report(self, trace_level=1):
+        if trace_level >= 2:
+            print(f'Spot Id:\n{self.spot_id}')
+        else:
+            species = self.spot_id.species
+            serial_number = self.spot_id.serial_number
+            hw_version = self.spot_id.version
+            major = self.spot_id.software_release.version.major_version
+            minor = self.spot_id.software_release.version.minor_version
+            patch = self.spot_id.software_release.version.patch_level
+            print(f'{species} s//n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
+
+        # Get the robot state
+        self.spot_state = self.state_client.get_robot_state()
+        if trace_level >= 2:
+            print(f'Spot State:\n{self.spot_state}')
+        else:
+            charge = self.spot_state.battery_states.value.charge_percentage
+            voltage = self.spot_state.battery_states.voltage.value
+            temperatures = self.spot_state.battery_states.temperatures
+            print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
+
+        if trace_level >= 2:
+            spot_estop_status = self.estop_client.get_status()
+            print(f'Spot estop status:\n{spot_estop_status}')
+
+        # List current leases
+        if trace_level >= 2:
+            spot_lease_list = self.lease_client.list_leases()
+            print(f'Spot lease list:\n{spot_lease_list}')
+
     '''
     @property
     def lease(self):
