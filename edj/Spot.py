@@ -48,11 +48,12 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
-            battery_state = robot_state_pb2.BatteryState(self.spot_state.battery_states)
-            charge = battery_state.charge_percentage.value
-            voltage = battery_state.voltage.value
-            temperatures = battery_state.temperatures
-            print(f'Battery charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
+            for battery_state in self.spot_state.battery_states:
+                id = battery_state.identifier
+                charge = battery_state.charge_percentage.value
+                voltage = battery_state.voltage.value
+                temperatures = battery_state.temperatures
+                print(f'Battery {id} charge: {charge}, volgate: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
         self.estop_client = self.robot.ensure_client('estop')
