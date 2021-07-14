@@ -31,7 +31,7 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
         else:
-            print(f'Spot s//n: {self.spot_id.serial_number}, hw version: {self.spot_id.version}, sw version: {self.spot_id.software_release.version.major_version}.{self.spot_id.software_release.version.minor_version} (patch level {self.spot_id.software_release.version.patch_level})'
+            print(f'Spot s//n: {self.spot_id.serial_number}, hw version: {self.spot_id.version}, sw version: {self.spot_id.software_release.version.major_version}.{self.spot_id.software_release.version.minor_version} (patch level {self.spot_id.software_release.version.patch_level})')
 
         # Log into the robot
         self.robot.authenticate(username, password)
