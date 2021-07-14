@@ -232,7 +232,7 @@ def stitch_greyscale8(image_1, image_2, vert_shader, frag_shader):
     print('Compiling shaders')
     program = CompiledShader(vert_shader, frag_shader)
     print('Success')
-    
+
     fbo = glGenFramebuffers(1)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo)
     texture = glGenTextures(1)
@@ -282,6 +282,8 @@ if __name__ == '__main__':
         vert_shader = file.read()
     with open('shader_frag.glsl', 'r') as file:
         frag_shader = file.read()
+
+    glutInit()
 
     spot = Spot()
 
