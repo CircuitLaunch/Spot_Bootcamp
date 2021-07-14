@@ -72,6 +72,7 @@ if __name__ == '__main__':
                     frontright_fisheye_img = img
                 print('3')
                 if frontleft_fisheye_img != None and frontright_fisheye_img != None:
+                    print(imutils.is_cv3())
                     stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
                     (status, stitched) = stitcher.stitch([frontleft_fisheye_img, frontright_fisheye_img])
                     print('4')
@@ -102,7 +103,6 @@ if __name__ == '__main__':
                             print(f'Failed to write {filename}')
                     else:
                         print('Failed to stitch front depth images')
-
 
             elif source[0:5] == 'right':
                 print('Rotating right image')
