@@ -66,14 +66,12 @@ class Spot:
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
 
-        '''
         # To obtain a lease
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
         self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
-        '''
 
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
@@ -86,25 +84,21 @@ class Spot:
             print('Terminating estop keep alive')
         self.estop_keep_alive.settle_then_cut()
         self.estop_keep_alive.shutdown()
-
-        '''
         if self.trace_level >= 1:
             print('Terminating lease keep alive')
         self.lease_keep_alive.shutdown()
         if self.trace_level >= 1:
             print('Returning lease')
         self.lease_client.return_lease(self.lease)
-        '''
-
         if self.trace_level >= 1:
             print('Spot module going out of scope')
 
+    '''
     @property
     def lease(self):
-        keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
-        lease =  self.lease_client
-        return (keep_alive, lease)
-
+        self.lease = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
+    '''
+    
     def power_on(self):
         # Powering Spot on
         self.robot.power_on(timeout_sec=20)
