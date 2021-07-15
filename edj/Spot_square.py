@@ -12,16 +12,12 @@ if __name__ == '__main__':
         spot.power_on()
 
         spot.move_to(1.0, 0.0, 0.0, math_helpers.Quat(), duration=5.0)
-        time.sleep(5.0)
 
         spot.move_to(0.0, 1.0, 0.0, math_helpers.Quat(), duration=5.0)
-        time.sleep(5.0)
 
         spot.move_to(-1.0, 0.0, 0.0, math_helpers.Quat(), duration=5.0)
-        time.sleep(5.0)
 
         spot.move_to(0.0, -1.0, 0.0, math_helpers.Quat(), duration=5.0)
-        time.sleep(5.0)
 
         # Power down
         spot.estop(graceful=True)

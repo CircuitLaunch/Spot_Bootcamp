@@ -100,14 +100,12 @@ class Spot:
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
 
-        '''
-        self.graph_nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        self.graph_nav_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
-        '''
-        
+
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
 
@@ -124,6 +122,34 @@ class Spot:
         self.lease_client.return_lease(self.lease)
         if self.trace_level >= 1:
             print('Spot module going out of scope')
+
+    def wait_for_mobility_command_completion(self, command_name, command_id, completion_test, timout=10.0, update_frequency=1.0):
+        now = time.time()
+        end_time = now + time_out
+        update_time = 1.0 / update_frequency
+
+        while now < end_time:
+            time_until_timeout = end_time - now
+            rpc_timeout = max(time_until_timeout, 1)
+            start_call_time = time.time()
+            try:
+                response = self.command_client.robot_command_feedback(command_id, timeout=rpc_timeout)
+                mob_feedback = response.feedback.synchronized_feedback.mobility_command_feedback
+                mob_status = mob_feedback.status
+                if completion_test(mob_feedback):
+                    return
+            except TimedOutError:
+                # Excuse the TimedOutError and let the while check bail us out if we're out of time.
+                pass
+            else:
+                if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING::
+                    raise CommandFailedError(f'{command_name} (ID {command_id}) no longer processing (now {basic_command_pb2.RobotCommandFeedbackStatus.Status.Name(mob_status)})')
+            delta_t = time.time() - start_call_time
+            time.sleep(max(min(delta_t, update_time), 0.0))
+            now = time.time()
+
+        raise CommandTimedOutError(
+            f'Took longer than {now - start_time:.1f} seconds to complete {command_name} command.')
 
     def report(self, trace_level=1):
         if trace_level >= 2:
@@ -155,12 +181,6 @@ class Spot:
         if trace_level >= 2:
             spot_lease_list = self.lease_client.list_leases()
             print(f'Spot lease list:\n{spot_lease_list}')
-
-    '''
-    @property
-    def lease(self):
-        self.lease = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
-    '''
 
     def power_on(self):
         # Powering Spot on
@@ -195,53 +215,73 @@ class Spot:
             print('Spot rolling over and powering down')
         belly_rub = RobotCommandBuilder.battery_change_pose_command(dir_hint=direction) # 1 = right / 2 = left
         command_id = self.command_client.robot_command(belly_rub)
-        '''
-        if wait:
-            now = time.time()
-            while now < end_time:
-                time_until_timeout = end_time - now
-                rpc_timeout = max(time_until_timeout, 1)
-                start_call_time = time.time()
-                try:
-                    response = self.command_client.robot_command_feedback(command_id, timeout=rpc_timeout)
-                    mob_feedback = response.feedback.synchronized_feedback.mobility_command_feedback
-                    mob_status = mob_feedback.status
-                    stand_status = mob_feedback.stand_feedback.status
-                except TimedOutError:
-                    # Excuse the TimedOutError and let the while check bail us out if we're out of time.
-                    pass
-                else:
-                    if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING:
-                        raise CommandFailedError('Stand (ID {}) no longer processing (now {})'.format(
-                            command_id,
-                            basic_command_pb2.RobotCommandFeedbackStatus.Status.Name(mob_status)))
-                    if stand_status == basic_command_pb2.StandCommand.Feedback.STATUS_IS_STANDING:
-                        return
-                delta_t = time.time() - start_call_time
-                time.sleep(max(min(delta_t, update_time), 0.0))
-                now = time.time()
 
-            raise CommandTimedOutError(
-                "Took longer than {:.1f} seconds to assure the robot stood.".format(now - start_time))
-        '''
+        if wait:
+            self.wait_for_mobility_command_completion('Bellyrub', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.battery_change_pose_feedback.status == basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED)
+            return None
+        return command_id
 
     def self_right(self, wait=True):
         if self.trace_level >= 1:
             print('Spot self-righting')
         self_right = RobotCommandBuilder.selfright_command()
-        self.command_client.robot_command(self_right)
+        command_id = self.command_client.robot_command(self_right)
+
+        if wait:
+            self.wait_for_mobility_command_completion('Self-right', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.selfright_feedback.status == basic_command_pb2.SitCommand.Feedback.STATUS_IS_SITTING)
+            return None
+        return command_id
 
     def stand(self, wait=True):
         if self.trace_level >= 1:
             print('Spot standing')
-        blocking_stand(self.command_client, timeout_sec=10)
+
+        stand_command = RobotCommandBuilder.synchro_stand_command()
+        command_id = self.command_client.robot_command(stand_command)
+
+        if wait:
+            self.wait_for_mobility_command_completion('Standing', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.stand_feedback.status == basic_command_pb2.StandCommand.Feedback.STATUS_IS_STANDING)
+            return None
+        return command_id
+
+    def sit(self, wait=True):
+        if self.trace_level >= 1:
+            print('Spot sitting')
+
+        sit_command = RobotCommandBuilder.synchro_sit_command()
+        command_id = self.command_client.robot_command(sit_command)
+
+        if wait:
+            self.wait_for_mobility_command_completion('Sitting', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.sit_feedback.status == basic_command_pb2.SitCommand.Feedback.STATUS_IS_SITTING)
+            return None
+        return command_id
 
     def pose(self, yaw=0.0, roll=0.0, pitch=0.0, wait=True):
         if self.trace_level >= 1:
             print(f'Spot posing (yaw: {yaw}, roll: {roll}, pitch: {pitch})')
         euler = bosdyn.geometry.EulerZXY(yaw=yaw, roll=roll, pitch=pitch)
         pose = RobotCommandBuilder.synchro_stand_command(footprint_R_body=euler)
-        self.command_client.robot_command(pose)
+        command_id = self.command_client.robot_command(pose)
+
+        if wait:
+            self.wait_for_mobility_command_completion('Posing', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.stand_feedback.status == basic_command_pb2.StandCommand.Feedback.STATUS_IS_STANDING)
+            return None
+        return command_id
 
     def list_image_sources(self, wait=True):
         return self.image_client.list_image_sources()
@@ -254,11 +294,18 @@ class Spot:
     def vision_tform_body(self):
         return get_vision_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot)
 
-    def move_to(self, x, y, z, rot_quat, duration=30.0, wait=True):
-        body_tform_goal = math_helpers.SE3Pose(x=x, y=y, z=z, rot=rot_quat)
+    def move_to(self, x, y, z=0.0, rot_quat=math_helpers.Quat(), duration=5.0, wait=True):
+        body_tform_goal = math_helpers.SE3Pose(x=x, y=y, z=0.0, rot=rot_quat)
         new_tform = self.vision_tform_body * body_tform_goal
         cmd = RobotCommandBuilder.synchro_se2_trajectory_point_command(goal_x=new_tform.x,
                         goal_y=new_tform.y, goal_heading=new_tform.rot.to_yaw(),
-                        frame_name=VISION_FRAME_NAME)
-        cmd_status = self.command_client.robot_command(cmd, end_time_secs=time.time() + duration)
-        return cmd_status
+                        frame_name=VISION_FRAME_NAME, body_height=z)
+        command_id = self.command_client.robot_command(cmd, end_time_secs=time.time() + duration)
+
+        if wait:
+            self.wait_for_mobility_command_completion('Move to', command_id,
+                completion_test:
+                    lambda mob_feedback:
+                        mob_feedback.se2_trajectory_feedback.status == basic_command_pb2.SE2TrajectoryCommand.Feedback.STATUS_AT_GOAL)
+            return None
+        return command_id

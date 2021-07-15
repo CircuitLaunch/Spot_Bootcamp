@@ -11,7 +11,6 @@ if __name__ == '__main__':
         spot.power_on()
 
         spot.belly_rub(direction=BELLY_RUB_RIGHT)
-        time.sleep(10.0)
 
         # Power down
         spot.estop(graceful=True)

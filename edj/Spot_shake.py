@@ -16,30 +16,21 @@ if __name__ == '__main__':
 
         for i in range(4):
             spot.pose(yaw=0.25)
-            time.sleep(1.0)
             spot.pose(yaw=-0.25)
-            time.sleep(1.0)
 
         spot.pose(yaw=0.0)
-        time.sleep(1.0)
 
         for i in range(4):
             spot.pose(roll=0.25)
-            time.sleep(1.0)
             spot.pose(roll=-0.25)
-            time.sleep(1.0)
 
         spot.pose(roll=0.0)
-        time.sleep(1.0)
 
         for i in range(4):
             spot.pose(pitch=0.25)
-            time.sleep(1.0)
             spot.pose(pitch=-0.25)
-            time.sleep(1.0)
 
         spot.pose(pitch=0.0)
-        time.sleep(1.0)
 
         # Power down
         spot.estop(graceful=True)
