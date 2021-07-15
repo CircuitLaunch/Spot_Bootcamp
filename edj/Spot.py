@@ -145,7 +145,7 @@ class Spot:
                 # Excuse the TimedOutError and let the while check bail us out if we're out of time.
                 pass
             else:
-                if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING::
+                if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING:
                     raise CommandFailedError(f'{command_name} (ID {command_id}) no longer processing (now {basic_command_pb2.RobotCommandFeedbackStatus.Status.Name(mob_status)})')
             delta_t = time.time() - start_call_time
             time.sleep(max(min(delta_t, update_time), 0.0))
