@@ -8,20 +8,55 @@ import numpy as np
 import imutils
 import cv2
 
-import OpenGL
 import bosdyn.api
 import bosdyn.client.util
 import io
 import os
 import sys
 
-from OpenGL.GL import *
-from OpenGL.GL import shaders, GL_VERTEX_SHADER
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
-from PIL import Image
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, get_vision_tform_body, get_a_tform_b
 from ctypes import *
+
+import moderngl as gl
+from ModernGL.ext import obj
+from PIL import Image
+from pyrr import Matrix44
+
+class Renderer:
+    def __init__(self, vertex_src, fragment_src, dims, fmt = 'rgba', enable = gl.DEPTH_TEST):
+        self.ctx = gl.create_standalone_context()
+        self.ctx.enable(enable)
+
+        self.fmts = {'rgb':(3,'f1','RGB'),'rgba':(4,'f1','RGBA'),'gs8':(1,'f1','L'),'gs16':(1,'u2','I;16')}
+
+        self.program = self.ctx.program(vertex_shader=vertex_src, fragment_shader=fragment_src)
+
+        self.fmt = self.fmts[fmt]
+        components = self.fmt[0]
+        dtype = self.fmt[1]
+        self.fb = self.ctx.texture(size=dims, components=components, dtype=dtype)
+        self.fbo = self.ctx.framebuffer(color_attachments=[self.fb])
+        self.fbo.use()
+
+    def render(self, draw_callback=None):
+        self.ctx.clear(1.0, 0.5, 0.0, 1.0, 1.0)
+
+        if draw_callback != None:
+            draw_callback(self)
+
+    def extract_framebuffer(self):
+        components = self.fmt[0]
+        dtype = self.fmt[1]
+        img_fmt = self.fmt[2]
+
+        data = self.fbo.read(components=components, attachment=0, dtype=dtype)
+
+        image = Image.frombytes(img_fmt, self.fbo.size, data)
+        return image
+
+    def save_framebuffer(self, filename):
+        image = self.extract_framebuffer()
+        image.save(filename)
 
 '''
 class ImagePreppedForOpenGL():
@@ -279,6 +314,15 @@ def stitch_depth18(image_1, image_2, vert_shader, frag_shader):
 
     return data
 '''
+
+class FisheyeStitcher:
+    def __init__(self):
+        with open('shader_vert.glsl', 'r') as file:
+            vert_shader = file.read()
+        with open('shader_frag.glsl', 'r') as file:
+            frag_shader = file.read()
+        self.fisheye_renderer = Renderer(fmt='gs8')
+
 
 if __name__ == '__main__':
     with open('shader_vert.glsl', 'r') as file:
