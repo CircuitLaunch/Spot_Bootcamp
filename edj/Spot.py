@@ -221,7 +221,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Bellyrub', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.battery_change_pose_feedback.status == basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED)
             return None
@@ -235,7 +235,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Self-right', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.selfright_feedback.status == basic_command_pb2.SitCommand.Feedback.STATUS_IS_SITTING)
             return None
@@ -250,7 +250,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Standing', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.stand_feedback.status == basic_command_pb2.StandCommand.Feedback.STATUS_IS_STANDING)
             return None
@@ -265,7 +265,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Sitting', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.sit_feedback.status == basic_command_pb2.SitCommand.Feedback.STATUS_IS_SITTING)
             return None
@@ -280,7 +280,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Posing', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.stand_feedback.status == basic_command_pb2.StandCommand.Feedback.STATUS_IS_STANDING)
             return None
@@ -307,7 +307,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Move to', command_id,
-                completion_test:
+                completion_test=
                     lambda mob_feedback:
                         mob_feedback.se2_trajectory_feedback.status == basic_command_pb2.SE2TrajectoryCommand.Feedback.STATUS_AT_GOAL)
             return None
