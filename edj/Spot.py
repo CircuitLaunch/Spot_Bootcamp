@@ -126,7 +126,7 @@ class Spot:
         if self.trace_level >= 1:
             print('Spot module going out of scope')
 
-    def wait_for_mobility_command_completion(self, command_name, command_id, completion_test, timout=10.0, update_frequency=1.0):
+    def wait_for_mobility_command_completion(self, command_name, command_id, completion_test, time_out=10.0, update_frequency=1.0):
         now = time.time()
         end_time = now + time_out
         update_time = 1.0 / update_frequency
