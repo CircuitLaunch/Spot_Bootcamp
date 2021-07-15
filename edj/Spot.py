@@ -144,6 +144,8 @@ class Spot:
             except TimedOutError:
                 # Excuse the TimedOutError and let the while check bail us out if we're out of time.
                 pass
+            except Exception as e:
+                print(f'Failed to wait for status on {command_name}: {e}')
             else:
                 if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING:
                     raise CommandFailedError(f'{command_name} (ID {command_id}) no longer processing (now {basic_command_pb2.RobotCommandFeedbackStatus.Status.Name(mob_status)})')
