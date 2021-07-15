@@ -28,8 +28,17 @@ class Spot:
         # Create a connection to the robot
         self.robot = self.sdk.create_robot(ip)
 
-        # Get the client ID
+        # Get references to the clients
         self.id_client = self.robot.ensure_client('robot-id')
+        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
+        self.estop_client = self.robot.ensure_client('estop')
+        self.lease_client = self.robot.ensure_client('lease')
+        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
+        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
+        self.graph_nav_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
+        self.world_object_client = self.robot.ensure_client(WorldObjectClient.default_service_name)
+
+        # Get the client ID
         self.spot_id = self.id_client.get_id()
         if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
@@ -46,7 +55,6 @@ class Spot:
         self.robot.authenticate(username, password)
 
         # Get the robot state
-        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
         self.spot_state = self.state_client.get_robot_state()
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
@@ -59,7 +67,6 @@ class Spot:
                 print(f'Battery {id} charge: {charge}, voltage: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
-        self.estop_client = self.robot.ensure_client('estop')
         spot_estop_status = self.estop_client.get_status()
         if trace_level >= 2:
             print(f'Spot estop status:\n{spot_estop_status}')
@@ -81,7 +88,6 @@ class Spot:
             print(f'Spot estop status:\n{spot_estop_status}')
 
         # List current leases
-        self.lease_client = self.robot.ensure_client('lease')
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
@@ -97,10 +103,7 @@ class Spot:
         elif trace_level >= 1:
             print('Lease acquired')
 
-        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
-        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
-
-        self.graph_nav_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
+        # Construct an empty map
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
