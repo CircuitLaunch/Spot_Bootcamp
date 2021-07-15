@@ -39,7 +39,7 @@ class Spot:
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
         self.graph_nav_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
-        self.world_object_client = self.robot.ensure_client(WorldObjectClient.default_service_name)
+        # self.world_object_client = self.robot.ensure_client(WorldObjectClient.default_service_name)
 
         # Get the client ID
         self.spot_id = self.id_client.get_id()
