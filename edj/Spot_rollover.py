@@ -4,7 +4,7 @@ from Spot import *
 import time
 
 if __name__ == '__main__':
-    spot = Spot()
+    spot = Spot(trace_level=2)
 
     try:
         # It's ALIVE!

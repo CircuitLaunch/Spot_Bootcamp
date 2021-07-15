@@ -127,6 +127,8 @@ class Spot:
             print('Spot module going out of scope')
 
     def wait_for_mobility_command_completion(self, command_name, command_id, completion_test, time_out=10.0, update_frequency=1.0):
+        if self.trace_level >= 2:
+            print(f'Waiting for completion of {command_name} command')
         now = time.time()
         end_time = now + time_out
         update_time = 1.0 / update_frequency
@@ -136,17 +138,25 @@ class Spot:
             rpc_timeout = max(time_until_timeout, 1)
             start_call_time = time.time()
             try:
+                if self.trace_level >= 2:
+                    print(f'Querying {command_name} command feedback')
                 response = self.command_client.robot_command_feedback(command_id, timeout=rpc_timeout)
+                if self.trace_level >= 2:
+                    print(f'Attempting to access {command_name} command status')
                 mob_feedback = response.feedback.synchronized_feedback.mobility_command_feedback
                 mob_status = mob_feedback.status
                 if completion_test(mob_feedback):
                     return
             except TimedOutError:
+                if self.trace_level >= 2:
+                    print(f'{command_name} command timed out')
                 # Excuse the TimedOutError and let the while check bail us out if we're out of time.
                 pass
             except Exception as e:
                 print(f'Failed to wait for status on {command_name}: {e}')
             else:
+                if self.trace_level >= 2:
+                    print(f'Comparing {command_name} command status')
                 if mob_status != basic_command_pb2.RobotCommandFeedbackStatus.STATUS_PROCESSING:
                     raise CommandFailedError(f'{command_name} (ID {command_id}) no longer processing (now {basic_command_pb2.RobotCommandFeedbackStatus.Status.Name(mob_status)})')
             delta_t = time.time() - start_call_time
