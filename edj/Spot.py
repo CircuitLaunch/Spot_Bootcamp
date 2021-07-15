@@ -238,7 +238,7 @@ class Spot:
                 print('Checking if battery_change_pose_feedback.status == BatteryChangePoseCommand.Feedback.STATUS_COMPLETED')
                 print(f'battery_change_pose_feedback.status == {mob_feedback.battery_change_pose_feedback.status}')
                 print(f'basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED == {basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED}')
-            return mob_feedback.battery_change_pose_feedback.status == basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED)
+            return mob_feedback.battery_change_pose_feedback.status == basic_command_pb2.BatteryChangePoseCommand.Feedback.STATUS_COMPLETED
 
         if wait:
             self.wait_for_mobility_command_completion('Bellyrub', command_id,
