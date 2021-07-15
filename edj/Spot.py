@@ -28,6 +28,9 @@ class Spot:
         # Create a connection to the robot
         self.robot = self.sdk.create_robot(ip)
 
+        # Log into the robot
+        self.robot.authenticate(username, password)
+
         # Get references to the clients
         self.id_client = self.robot.ensure_client('robot-id')
         self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
@@ -50,9 +53,6 @@ class Spot:
             minor = self.spot_id.software_release.version.minor_version
             patch = self.spot_id.software_release.version.patch_level
             print(f'{species} s/n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
-
-        # Log into the robot
-        self.robot.authenticate(username, password)
 
         # Get the robot state
         self.spot_state = self.state_client.get_robot_state()
