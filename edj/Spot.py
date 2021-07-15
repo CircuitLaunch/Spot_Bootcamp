@@ -2,6 +2,9 @@ import time
 from bosdyn.api import robot_state_pb2, robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
 from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
+from bosdyn.api.graph_nav import graph_nav_pb2
+from bosdyn.api.graph_nav import map_pb2
+from bosdyn.api.graph_nav import nav_pb2
 import bosdyn.client
 import bosdyn.client.lease
 import bosdyn.client.util
@@ -9,10 +12,12 @@ from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.client.image import ImageClient
-from bosdyn.util import seconds_to_duration
+from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
+from bosdyn.client.local_grid import LocalGridClient
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
 from bosdyn.client import math_helpers
+from bosdyn.util import seconds_to_duration
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
@@ -100,14 +105,16 @@ class Spot:
         self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
 
-        '''
-        self.graph_nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
+
+        self.map_current_filepath = None
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
+        self.current_edge_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
-        '''
-        
+
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
 
@@ -262,3 +269,49 @@ class Spot:
                         frame_name=VISION_FRAME_NAME)
         cmd_status = self.command_client.robot_command(cmd, end_time_secs=time.time() + duration)
         return cmd_status
+
+    def upload_map(self, filepath):
+        self.map_current_filepath = filepath
+        with open(f'{filepath}/graph', 'rb') as graph_file:
+            if self.trace_level >= 1:
+                print(f'Reading {filepath}/graph')
+            data = graph_file.read()
+            self.current_graph = map_pb2.Graph()
+            self.current_graph.ParseFromString(data)
+        for waypoint in self.current_graph.waypoints:
+            with open(f'{filepath}/waypoint_snapshots/{waypoint.snapshot_id}'), 'rb') as snapshot_file:
+                if self.trace_level >= 1:
+                    print(f'Reading waypoint snapshot {waypoint.snapshot_id}')
+                wp_snapshot = map_pb2.WaypointSnapshot()
+                wp_snapshot.ParseFromString(snapshot_file.read())
+                self.current_waypoint_snapshots[wp_snapshot.id] = wp_snapshot
+        for edge in self.current_graph.edges:
+            with open(f'{filepath}/edge_snapshots/{edge.snapshot_id}'), 'rb') as snapshot_file:
+                if self.trace_level >= 1:
+                    print(f'Reading edge snapshot {edge.snapshot_id}')
+                ed_snapshot = map_pb2.EdgeSnapshot()
+                ed_snapshot.ParseFromString(snapshot_file.read())
+                self.current_waypoint_snapshots[ed_snapshot.id] = ed_snapshot
+                
+        if self.trace_level >= 1:
+            print(f'Uploading map at {filepath} to Spot')
+        response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
+
+        for snapshot_id in response.unknown_waypoint_snapshot_ids:
+            wp_snapshot = self.current_waypoint_snapshots[snapshot_id]
+            self.nav_client.upload_waypoint_snapshot(wp_snapshot)
+            if self.trace_level >= 1:
+                print(f'Uploaded waypoint snapshot {snapshot_id}')
+        for snapshot_id in response.unknown_edge_snapshot_ids:
+            ed_snapshot = self.current_edge_snapshots[snapshot_id]
+            self.nav_client.upload_edge_snapshot(ed_snapshot)
+            if self.trace_level >= 1:
+                print(f'Uploaded edge snapshot {snapshot_id}')
+
+        print('Map upload complete')
+
+        localization_state = self.nav_client.get_localization_state()
+
+        if not localization_state.localization.waypoint_id:
+            if self.trace_level >= 1:
+                print(f'Spot is not localized. Please localize.')
