@@ -242,7 +242,7 @@ class Spot:
 
         if wait:
             self.wait_for_mobility_command_completion('Bellyrub', command_id,
-                completion_test=test_feedback
+                completion_test=test_feedback)
             return None
         '''
         if wait:
