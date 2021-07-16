@@ -3,7 +3,7 @@
 from Spot import *
 
 if __name__ == '__main__':
-	spot = Spot()
+	spot = Spot(ip='192.168.1.196')
 
 	try:
 		path_to_map = './map'
