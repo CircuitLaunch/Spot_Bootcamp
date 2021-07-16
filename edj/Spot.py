@@ -306,7 +306,7 @@ class Spot:
 
         if self.trace_level >= 1:
             print(f'Uploading map at {filepath} to Spot')
-        response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
+        response = self.nav_client.upload_graph(lease=self.lease, graph=self.current_graph)
 
         for snapshot_id in response.unknown_waypoint_snapshot_ids:
             wp_snapshot = self.current_waypoint_snapshots[snapshot_id]
