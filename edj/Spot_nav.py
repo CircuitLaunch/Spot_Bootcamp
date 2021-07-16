@@ -8,7 +8,7 @@ if __name__ == '__main__':
 	try:
 		path_to_map = './map'
 		initial_waypoint_short_code = 'zc'
-		waypoint_id_or_short_code = 'am'
+		waypoint_id_or_short_code = 'sl'
 
 		# spot.clear_map()
 
