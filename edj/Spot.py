@@ -427,7 +427,7 @@ class Spot:
         self.nav_client.set_localization(
             initial_guess_localization=localization,
             max_distance=0.2,
-            max_yaw = 20.0 * math.py / 180.0
+            max_yaw = 20.0 * math.py / 180.0,
             fiducial_init = graph_nav_pb2.SetLocalizationRequest.FIDUCIAL_INIT_NO_FIDUCIAL,
             ko_tform_body=odom_tform_body)
 
