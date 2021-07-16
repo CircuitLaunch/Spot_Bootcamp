@@ -304,6 +304,7 @@ class Spot:
                 ed_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[ed_snapshot.id] = ed_snapshot
 
+        '''
         if self.trace_level >= 1:
             print(f'Uploading map at {filepath} to Spot')
         response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
@@ -318,6 +319,7 @@ class Spot:
             self.nav_client.upload_edge_snapshot(ed_snapshot)
             if self.trace_level >= 1:
                 print(f'Uploaded edge snapshot {snapshot_id}')
+        '''
 
         print('Map upload complete')
 
