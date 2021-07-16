@@ -514,6 +514,7 @@ class Spot:
     def nav_to(self, waypoint_id):
         self.lease = self.lease_wallet.get_lease()
         wp = self.find_unique_waypoint_id(waypoint_id, self.current_annotation_name_to_wp_id)
+        print(f'find_unique_waypoint_id returned: {wp}')
         if not wp:
             return
         if not self.toggle_power(should_power_on=True):
