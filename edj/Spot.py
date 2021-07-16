@@ -469,12 +469,16 @@ class Spot:
     @property
     def nav_status(self):
         cmd_id = self.current_nav_cmd_id
+        if cmd_id == -1:
+            return None
         feedback = self.nav_client.navigation_feedback(cmd_id)
         return feedback.status
 
     @property
     def nav_finished(self):
         status = self.nav_status
+        if status == None:
+            return False
         if status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
             # Successfully completed the navigation commands!
             return True
