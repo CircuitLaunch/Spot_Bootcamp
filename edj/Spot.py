@@ -279,20 +279,20 @@ class Spot:
             self.current_graph = map_pb2.Graph()
             self.current_graph.ParseFromString(data)
         for waypoint in self.current_graph.waypoints:
-            with open(f'{filepath}/waypoint_snapshots/{waypoint.snapshot_id}'), 'rb') as snapshot_file:
+            with open(f'{filepath}/waypoint_snapshots/{waypoint.snapshot_id}'), 'rb' as snapshot_file:
                 if self.trace_level >= 1:
                     print(f'Reading waypoint snapshot {waypoint.snapshot_id}')
                 wp_snapshot = map_pb2.WaypointSnapshot()
                 wp_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[wp_snapshot.id] = wp_snapshot
         for edge in self.current_graph.edges:
-            with open(f'{filepath}/edge_snapshots/{edge.snapshot_id}'), 'rb') as snapshot_file:
+            with open(f'{filepath}/edge_snapshots/{edge.snapshot_id}'), 'rb' as snapshot_file:
                 if self.trace_level >= 1:
                     print(f'Reading edge snapshot {edge.snapshot_id}')
                 ed_snapshot = map_pb2.EdgeSnapshot()
                 ed_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[ed_snapshot.id] = ed_snapshot
-                
+
         if self.trace_level >= 1:
             print(f'Uploading map at {filepath} to Spot')
         response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
