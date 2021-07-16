@@ -429,7 +429,7 @@ class Spot:
             if short_code == self.id_to_short_code(wp.id):
                 if ret != short_code:
                     return short_code
-                ret = waypoint.id
+                ret = wp.id
         return ret
 
     @property
