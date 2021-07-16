@@ -549,9 +549,13 @@ class Spot:
         self.lease_keep_alive.shutdown()
         is_finished = False
         self.current_nav_cmd_id = None
+        cmd_id = None
         while not is_finished and not self.abort_nav:
             try:
-                self.current_nav_cmd_id = self.nav_client.navigate_to(destination_waypoint_id=wp, cmd_duration=1.0, leases=[sublease.lease_proto])
+                with self._current_nav_cmd_id_mutex:
+                    cmd_id = self.nav_client.navigate_to(destination_waypoint_id=wp, cmd_duration=1.0, leases=[sublease.lease_proto], command_id=cmd_id)
+                    self._current_nav_cmd_id = cmd_id
+
             except ResponseError as e:
                 print(f'Navigation error {e}')
                 break
