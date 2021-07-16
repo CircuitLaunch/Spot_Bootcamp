@@ -6,8 +6,8 @@ if __name__ == '__main__':
 	spot = Spot()
 
 	try:
-		path_to_map = 'my_map_path'
-		waypoint_id_or_short_code = 'my_waypoint_id'
+		path_to_map = './map'
+		waypoint_id_or_short_code = 'fm'
 
 		spot.clear_map()
 
