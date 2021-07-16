@@ -15,7 +15,7 @@ if __name__ == '__main__':
 		spot.stand()
 		time.sleep(5.0)
 
-		spot.upload_map(path_to_map)
+		# spot.upload_map(path_to_map)
 
 		spot.set_initial_localization_fiducial()
 
