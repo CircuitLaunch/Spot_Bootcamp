@@ -15,7 +15,7 @@ from bosdyn.client.image import ImageClient
 from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
 from bosdyn.client.local_grid import LocalGridClient
-from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_bodyv, get_odom_tform_body
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
 from threading import Thread, Lock
@@ -268,6 +268,10 @@ class Spot:
     def vision_tform_body(self):
         return get_vision_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot)
 
+    @property
+    def odom_tform_body(self):
+        return get_odom_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot).to_proto()
+
     def move_to(self, x, y, z, rot_quat, duration=30.0, wait=True):
         body_tform_goal = math_helpers.SE3Pose(x=x, y=y, z=z, rot=rot_quat)
         new_tform = self.vision_tform_body * body_tform_goal
@@ -379,7 +383,7 @@ class Spot:
         # fallback to sorting by annotation name.
         waypoint_to_timestamp = sorted(waypoint_to_timestamp, key= lambda x:(x[1], x[2]))
 
-        def _pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
+        def pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
             short_code = self.id_to_short_code(waypoint_id)
             if short_code is None or short_code_to_count[short_code] != 1:
                 short_code = '  '  # If the short code is not valid/unique, don't show it.
@@ -398,6 +402,14 @@ class Spot:
                 edges[edge.id.to_waypoint] = [edge.id.from_waypoint]
 
         return name_to_id, edges
+
+    def set_initial_localization_fiducial(self):
+        """Trigger localization when near a fiducial."""
+        current_odom_tform_body = self.odom_tform_body
+        # Create an empty instance for initial localization since we are asking it to localize
+        # based on the nearest fiducial.
+        localization = nav_pb2.Localization()
+        self._graph_nav_client.set_localization(initial_guess_localization=localization, ko_tform_body=current_odom_tform_body)
 
     def find_unique_waypoint_id(self, short_code):
         name_to_id = self.current_annotation_name_to_wp_id
