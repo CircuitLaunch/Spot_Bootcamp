@@ -530,9 +530,10 @@ class Spot:
         sublease = self.lease.create_sublease()
         self.lease_keep_alive.shutdown()
         is_finished = False
+        self.current_nav_cmd_id = None
         while not self.nav_finished and not self.abort_nav:
             try:
-                self.current_nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=nav_cmd_id)
+                self.current_nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=self.current_nav_cmd_id)
             except ResponseError as e:
                 print(f'Navigation error {e}')
                 break
