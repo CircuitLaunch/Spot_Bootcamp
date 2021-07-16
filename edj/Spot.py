@@ -12,6 +12,7 @@ from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.client.image import ImageClient
+from bosdyn.client.exceptions import ResponseError
 from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
 from bosdyn.client.local_grid import LocalGridClient
