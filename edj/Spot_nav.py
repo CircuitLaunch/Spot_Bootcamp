@@ -3,11 +3,11 @@
 from Spot import *
 
 if __name__ == '__main__':
-	spot = Spot(ip='192.168.1.196')
+	spot = Spot()
 
 	try:
-		path_to_map = 'C:\\Users\\752700\\Desktop\\Spot\\Spot_Bootcamp\\edj\\map'
-		waypoint_id_or_short_code = 'zc'
+		path_to_map = './map'
+		waypoint_id_or_short_code = 'fm'
 
 		# spot.clear_map()
 
