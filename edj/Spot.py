@@ -531,14 +531,15 @@ class Spot:
         self.lease_keep_alive.shutdown()
         is_finished = False
         self.current_nav_cmd_id = None
-        while not self.nav_finished and not self.abort_nav:
+        while not is_finished and not self.abort_nav:
             try:
-                self.current_nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=self.current_nav_cmd_id)
+                self.current_nav_cmd_id = self.nav_client.navigate_to(destination_waypoint_id=wp, cmd_duration=1.0, leases=[sublease.lease_proto])
             except ResponseError as e:
                 print(f'Navigation error {e}')
                 break
             time.sleep(0.5)
 
+            is_finished = self.nav_finished
         self.lease = self.lease_wallet.advance()
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
 
