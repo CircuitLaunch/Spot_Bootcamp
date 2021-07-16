@@ -414,6 +414,23 @@ class Spot:
         localization = nav_pb2.Localization()
         self.nav_client.set_localization(initial_guess_localization=localization, ko_tform_body=current_odom_tform_body)
 
+    def set_initial_localization_waypoint(self, short_code):
+        wp = self.find_unique_waypoint_id(short_code)
+        if not wp:
+            return
+
+        state = self.state_client.get_robot_state()
+        odom_tform_body = self.odom_tform_body
+        localization = nav_pb2.Localization()
+        localization.waypoint_id = wp
+        localization.waypoint_tform_body.rotation.w = 1.0
+        self.nav_client.set_localization(
+            initial_guess_localization=localization,
+            max_distance=0.2,
+            max_yaw = 20.0 * math.py / 180.0
+            fiducial_init = graph_nav_pb2.SetLocalizationRequest.FIDUCIAL_INIT_NO_FIDUCIAL,
+            ko_tform_body=odom_tform_body)
+
     def find_unique_waypoint_id(self, short_code):
         name_to_id = self.current_annotation_name_to_wp_id
         if len(short_code) != 2:
