@@ -537,7 +537,7 @@ class Spot:
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
 
     def threaded_nav_to(self, waypoint_id):
-        print(f'waypoint_id: \n{waypoint_id})
+        print(f'waypoint_id: \n{waypoint_id}')
         self.abort_nav = False
         self._nav_thread = Thread(target=self.nav_to, args=(waypoint_id))
         self._nav_thread.start()
