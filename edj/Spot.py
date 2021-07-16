@@ -119,6 +119,8 @@ class Spot:
         self._nav_thread = None
         self._abort_nav_mutex = Lock()
         self._abort_nav = False
+        self._current_nav_cmd_id_mutex = Lock()
+        self._current_nav_cmd_id = -1
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -321,6 +323,9 @@ class Spot:
             if self.trace_level >= 1:
                 print(f'Spot is not localized. Please localize.')
 
+        # Update waypoints and edges
+        self.current_annotation_name_to_wp_id, self.current_edges = self.update_waypoints_and_edges()
+
     def clear_map(self):
         self.nav_client.clear_graph(lease=self.lease.lease_proto)
 
@@ -330,7 +335,72 @@ class Spot:
             return f'{tokens[0][0]}{tokens[1][0]}'
         return None
 
-    def find_unique_waypoint_id(self, short_code, name_to_id):
+    def update_waypoints_and_edges(self):
+        localization_id = self.nav_client.get_localization_state().localization.waypoint_id
+
+        name_to_id = {}
+        edges = {}
+
+        short_code_to_count = {}
+        waypoint_to_timestamp = []
+        for waypoint in self.current_graph.waypoints:
+            # Determine the timestamp that this waypoint was created at.
+            timestamp = -1.0
+            try:
+                timestamp = waypoint.annotations.creation_time.seconds + waypoint.annotations.creation_time.nanos / 1e9
+            except:
+                # Must be operating on an older graph nav map, since the creation_time is not
+                # available within the waypoint annotations message.
+                pass
+            waypoint_to_timestamp.append((waypoint.id,
+                                            timestamp,
+                                            waypoint.annotations.name))
+
+            # Determine how many waypoints have the same short code.
+            short_code = self.id_to_short_code(waypoint.id)
+
+            if short_code not in short_code_to_count:
+                short_code_to_count[short_code] = 0
+            short_code_to_count[short_code] += 1
+
+            # Add the annotation name/id into the current dictionary.
+            waypoint_name = waypoint.annotations.name
+            if waypoint_name:
+                if waypoint_name in name_to_id:
+                    # Waypoint name is used for multiple different waypoints, so set the waypoint id
+                    # in this dictionary to None to avoid confusion between two different waypoints.
+                    name_to_id[waypoint_name] = None
+                else:
+                    # First time we have seen this waypoint annotation name. Add it into the dictionary
+                    # with the respective waypoint unique id.
+                    name_to_id[waypoint_name] = waypoint.id
+
+        # Sort the set of waypoints by their creation timestamp. If the creation timestamp is unavailable,
+        # fallback to sorting by annotation name.
+        waypoint_to_timestamp = sorted(waypoint_to_timestamp, key= lambda x:(x[1], x[2]))
+
+        def _pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
+            short_code = self.id_to_short_code(waypoint_id)
+            if short_code is None or short_code_to_count[short_code] != 1:
+                short_code = '  '  # If the short code is not valid/unique, don't show it.
+
+            print(f'{"->" if localization_id == waypoint_id else "  "} waypoint: {waypoint_name} id: {waypoint_id} short code: {short_code}')
+
+        print(f'{len(graph.waypoints)} waypoints:')
+        for waypoint in waypoint_to_timestamp:
+            pp_waypoints(waypoint[0], waypoint[2], short_code_to_count, localization_id)
+
+        for edge in self.current_graph.edges:
+            if edge.id.to_waypoint in edges:
+                if edge.id.from_waypoint not in edges[edge.id.to_waypoint]:
+                    edges[edge.id.to_waypoint].append(edge.id.from_waypoint)
+            else:
+                edges[edge.id.to_waypoint] = [edge.id.from_waypoint]
+
+        return name_to_id, edges
+
+    def find_unique_waypoint_id(self, short_code):
+        name_to_id = self.current_annotation_name_to_wp_id
         if len(short_code) != 2:
             if short_code in name_to_id:
                 if name_to_id[short_code] is not None:
@@ -372,25 +442,50 @@ class Spot:
 
         return self.is_powered_on
 
-    def nav_success(self, cmd_id=-1):
-        if cmd_id == -1:
-            return false
-        status = self.nav_client.navigation_feedback(cmd_id)
-        if status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
+    @property
+    def current_nav_cmd_id(self):
+        with self._current_nav_cmd_id_mutex:
+            return self._current_nav_cmd_id
+
+    @current_nav_cmd_id.setter
+    def current_nav_cmd_id(self, value):
+        with self._current_nav_cmd_id_mutex:
+            self._current_nav_cmd_id = value
+
+    @property
+    def nav_status(self):
+        cmd_id = self.current_nav_cmd_id
+        feedback = self.nav_client.navigation_feedback(cmd_id)
+        return feedback.status
+
+    @property
+    def nav_finished(self):
+        status = self.nav_status
+        if status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
             # Successfully completed the navigation commands!
             return True
-        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
+            return True
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
+            return True
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
+            return True
+
+        # Navigation command is not complete yet.
+        return False
+
+    def report_nav_status(self):
+        status = self.nav_status
+        if status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
+            print('Spot has reached the goal.')
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
             print('Spot is lost.')
-            return True
-        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
             print('Spot encounted an obstacle.')
-            return True
-        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
             print('Spot impaired.')
-            return True
         else:
-            # Navigation command is not complete yet.
-            return False
+            print('Navigation incomplete')
 
     @property
     def abort_nav(self):
@@ -414,16 +509,14 @@ class Spot:
         self.lease = self.lease_wallet.advance()
         sublease = self.lease.create_sublease()
         self.lease_keep_alive.shutdown()
-        nav_cmd_id = None
         is_finished = False
-        while not is_finished and not self.abort_nav:
+        while not self.nav_finished and not self.abort_nav:
             try:
-                nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=nav_cmd_id)
+                self.current_nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=nav_cmd_id)
             except ResponseError as e:
                 print(f'Navigation error {e}')
                 break
             time.sleep(0.5)
-            is_finisehd = self.nav_success(nav_cmd_id)
 
         self.lease = self.lease_wallet.advance()
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
