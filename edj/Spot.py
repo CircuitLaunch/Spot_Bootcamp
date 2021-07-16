@@ -20,6 +20,7 @@ from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
 from threading import Thread, Lock
+import math
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
