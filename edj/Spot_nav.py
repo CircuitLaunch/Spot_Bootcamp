@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
 		spot.clear_map()
 
-		spot.upload_map(my_map_path)
+		spot.upload_map(path_to_map)
 
 		spot.set_initial_localization_fiducial()
 
