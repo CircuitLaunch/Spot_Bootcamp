@@ -382,7 +382,7 @@ class Spot:
         # Sort the set of waypoints by their creation timestamp. If the creation timestamp is unavailable,
         # fallback to sorting by annotation name.
         waypoint_to_timestamp = sorted(waypoint_to_timestamp, key= lambda x:(x[1], x[2]))
-
+        
         def pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
             short_code = self.id_to_short_code(waypoint_id)
             if short_code is None or short_code_to_count[short_code] != 1:
