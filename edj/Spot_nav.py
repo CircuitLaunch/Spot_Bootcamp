@@ -24,7 +24,7 @@ if __name__ == '__main__':
 		status = spot.report_nav_status()
 
 	except Exception as e:
-		print('There was an exception: {e}')
+		print(f'There was an exception: {e}')
 
 	# Force garbage collection
 	spot = None
