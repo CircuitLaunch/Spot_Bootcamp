@@ -392,7 +392,7 @@ class Spot:
 
             print(f'{"->" if localization_id == waypoint_id else "  "} waypoint: {waypoint_name} id: {waypoint_id} short code: {short_code}')
 
-        print(f'{len(graph.waypoints)} waypoints:')
+        print(f'{len(self.current_graph.waypoints)} waypoints:')
         for waypoint in waypoint_to_timestamp:
             pp_waypoints(waypoint[0], waypoint[2], short_code_to_count, localization_id)
 
