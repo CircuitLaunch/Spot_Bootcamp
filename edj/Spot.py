@@ -18,6 +18,7 @@ from bosdyn.client.local_grid import LocalGridClient
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
+from threading import Thread, Lock
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
@@ -32,9 +33,20 @@ class Spot:
 
         # Create a connection to the robot
         self.robot = self.sdk.create_robot(ip)
+        # Log into the robot
+        self.robot.authenticate(username, password)
+
+        self.id_client = self.robot.ensure_client('robot-id')
+        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
+        self.spot_state = self.state_client.get_robot_state()
+        self.estop_client = self.robot.ensure_client('estop')
+        self.lease_client = self.robot.ensure_client('lease')
+        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
+        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
+        self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
 
         # Get the client ID
-        self.id_client = self.robot.ensure_client('robot-id')
         self.spot_id = self.id_client.get_id()
         if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
@@ -47,12 +59,7 @@ class Spot:
             patch = self.spot_id.software_release.version.patch_level
             print(f'{species} s/n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
 
-        # Log into the robot
-        self.robot.authenticate(username, password)
-
         # Get the robot state
-        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
-        self.spot_state = self.state_client.get_robot_state()
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
@@ -64,7 +71,6 @@ class Spot:
                 print(f'Battery {id} charge: {charge}, voltage: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
-        self.estop_client = self.robot.ensure_client('estop')
         spot_estop_status = self.estop_client.get_status()
         if trace_level >= 2:
             print(f'Spot estop status:\n{spot_estop_status}')
@@ -86,7 +92,6 @@ class Spot:
             print(f'Spot estop status:\n{spot_estop_status}')
 
         # List current leases
-        self.lease_client = self.robot.ensure_client('lease')
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
@@ -95,6 +100,8 @@ class Spot:
         if trace_level >= 1:
             print('Attempting to acquire lease')
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
+        self.lease_wallet = self.lease_client.lease_wallet
+
         self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
@@ -102,18 +109,16 @@ class Spot:
         elif trace_level >= 1:
             print('Lease acquired')
 
-        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
-        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
-
-        self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
-        # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
-
         self.map_current_filepath = None
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
         self.current_edge_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
+
+        self._nav_thread = None
+        self._abort_nav_mutex = Lock()
+        self._abort_nav = False
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -292,7 +297,7 @@ class Spot:
                 ed_snapshot = map_pb2.EdgeSnapshot()
                 ed_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[ed_snapshot.id] = ed_snapshot
-                
+
         if self.trace_level >= 1:
             print(f'Uploading map at {filepath} to Spot')
         response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
@@ -315,3 +320,119 @@ class Spot:
         if not localization_state.localization.waypoint_id:
             if self.trace_level >= 1:
                 print(f'Spot is not localized. Please localize.')
+
+    def clear_map(self):
+        self.nav_client.clear_graph(lease=self.lease.lease_proto)
+
+    def id_to_short_code(self, wp_id):
+        tokens = wp_id.split('-')
+        if len(tokens) > 2:
+            return f'{tokens[0][0]}{tokens[1][0]}'
+        return None
+
+    def find_unique_waypoint_id(self, short_code, name_to_id):
+        if len(short_code) != 2:
+            if short_code in name_to_id:
+                if name_to_id[short_code] is not None:
+                    return name_to_id[short_code]
+                else:
+                    print('{short_code} is not-unique. Please use the full waypoint-id')
+                    return None
+            return short_code
+
+        ret = short_code
+        for wp in self.current_graph.waypoints:
+            if short_code == self.id_to_short_code(wp.id):
+                if ret != short_code:
+                    return short_code
+                ret = waypoint.id
+        return ret
+
+    @property
+    def is_powered_on(self):
+        power_state = self.state_client.get_robot_state().power_state
+        return (power_state.motor_power_state == power_state.STATE_ON)
+
+    def toggle_power(self, should_power_on):
+        power = self.is_powered_on
+        if not power and should_power_on:
+            self.power_on()
+            motors_on = False
+            while not motors_on:
+                future = self.state_client.get_robot_state_async()
+                response = future.result(timeout = 10.0)
+                if response.power_state.motor_power_state == robot_state_pb2.PowerState.STATE_ON:
+                    motors_on = True
+                else:
+                    time.sleep(0.25
+        elif power and not should_power_on:
+            self.power_off()
+        else:
+            return power
+
+        return self.is_powered_on
+
+    def nav_success(self, cmd_id=-1):
+        if cmd_id == -1:
+            return false
+        status = self.nav_client.navigation_feedback(cmd_id)
+        if status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
+            # Successfully completed the navigation commands!
+            return True
+        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
+            print('Spot is lost.')
+            return True
+        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
+            print('Spot encounted an obstacle.')
+            return True
+        elif status.status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
+            print('Spot impaired.')
+            return True
+        else:
+            # Navigation command is not complete yet.
+            return False
+
+    @property
+    def abort_nav(self):
+        with self._abort_nav_mutex:
+            return self._abort_nav
+
+    @abort_nav.setter
+    def abort_nav(self, value):
+        with self._abort_nav_mutex:
+            self._abort_nav = value
+
+    def nav_to(self, waypoint_id):
+        self.lease = self.lease_wallet.get_lease()
+        wp = self.find_unique_waypoint_id(waypoint_id, self.current_annotation_name_to_wp_id)
+        if not wp:
+            return
+        if not self.toggle_power(should_power_on=True):
+            print('Could not power up Spot')
+            return
+
+        self.lease = self.lease_wallet.advance()
+        sublease = self.lease.create_sublease()
+        self.lease_keep_alive.shutdown()
+        nav_cmd_id = None
+        is_finished = False
+        while not is_finished and not self.abort_nav:
+            try:
+                nav_cmd_id = self.nav_client.navigate_to(wp, leases=[sublease.lease_proto], command_id=nav_cmd_id)
+            except ResponseError as e:
+                print(f'Navigation error {e}')
+                break
+            time.sleep(0.5)
+            is_finisehd = self.nav_success(nav_cmd_id)
+
+        self.lease = self.lease_wallet.advance()
+        self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
+
+    def threaded_nav_to(self, waypoint_id):
+        self.abort_nav = False
+        self._nav_thread = Thread(target=self.nav_to, args=(waypoint_id))
+        self._nav_thread.start()
+
+    def wait_nav_thread(self):
+        self._nav_thread.join()
+        self._nav_thread = None
