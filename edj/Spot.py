@@ -15,7 +15,7 @@ from bosdyn.client.image import ImageClient
 from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
 from bosdyn.client.local_grid import LocalGridClient
-from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_bodyv, get_odom_tform_body
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body, get_odom_tform_body
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
 from threading import Thread, Lock
