@@ -409,7 +409,7 @@ class Spot:
         # Create an empty instance for initial localization since we are asking it to localize
         # based on the nearest fiducial.
         localization = nav_pb2.Localization()
-        self._graph_nav_client.set_localization(initial_guess_localization=localization, ko_tform_body=current_odom_tform_body)
+        self.nav_client.set_localization(initial_guess_localization=localization, ko_tform_body=current_odom_tform_body)
 
     def find_unique_waypoint_id(self, short_code):
         name_to_id = self.current_annotation_name_to_wp_id
