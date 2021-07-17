@@ -235,7 +235,8 @@ class FollowFiducial(object):
         fiducial_objects = self._world_object_client.list_world_objects(
             object_type=request_fiducials).world_objects
         if len(fiducial_objects) > 0:
-            print(f'Fiducials found: {fiducial_objects}')
+            print(type(fiducial_objects[0]))
+            print(f'Fiducials found: {fiducial_objects[0].apriltag_properties.tag_id}')
             # Return the first detected fiducial.
             return fiducial_objects[0]
         # Return none if no fiducials are found.
@@ -600,7 +601,7 @@ def main():
                         help="Distance [meters] that the robot should stop from the fiducial.")
     parser.add_argument("--limit-speed", default=True, type=lambda x: (str(x).lower() == 'true'),
                         help="If the robot should limit its maximum speed.")
-    parser.add_argument("--avoid-obstacles", default=False,
+    parser.add_argument("--avoid-obstacles", default=True,
                         type=lambda x: (str(x).lower() == 'true'),
                         help="If the robot should have obstacle avoidance enabled.")
     parser.add_argument(
