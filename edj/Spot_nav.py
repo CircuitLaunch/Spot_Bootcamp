@@ -27,7 +27,6 @@ if __name__ == '__main__':
 
 		if spot.find_fiducial(220):
 			spot.abort_nav = True
-			time.sleep(1.0)
 
 		spot.wait_nav_thread()
 
