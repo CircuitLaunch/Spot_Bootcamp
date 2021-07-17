@@ -25,6 +25,15 @@ if __name__ == '__main__':
 
 		spot.threaded_nav_to(unique_id)
 
+		if spot.find_fiducial_object(220):
+			spot.abort_nav = True
+
+		spot.wait_nav_thread()
+
+		unique_id = spot.find_unique_waypoint_id(initial_waypoint_short_code)
+
+		spot.threaded_nav_to(unique_id)
+
 		spot.wait_nav_thread()
 
 		status = spot.report_nav_status()

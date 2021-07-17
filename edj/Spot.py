@@ -1,5 +1,6 @@
 import time
 from bosdyn.api import robot_state_pb2, robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
+from bosdyn.api import world_object_pb2
 from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
 from bosdyn.api.graph_nav import graph_nav_pb2
@@ -19,6 +20,7 @@ from bosdyn.client.local_grid import LocalGridClient
 from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body, get_odom_tform_body
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
+from bosdyn.client.world_object import WorldObjectClient
 from threading import Thread, Lock
 import math
 
@@ -47,6 +49,7 @@ class Spot:
         self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
         self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
         # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
+        self.world_object_client = self.robot.ensure_client(WorldObjectClient.default_service_name)
 
         # Get the client ID
         self.spot_id = self.id_client.get_id()
@@ -547,7 +550,7 @@ class Spot:
         self.lease = self.lease_wallet.advance()
         sublease = self.lease.create_sublease()
         self.lease_keep_alive.shutdown()
-        
+
         is_finished = False
         self.current_nav_cmd_id = None
         cmd_id = None
@@ -576,3 +579,13 @@ class Spot:
     def wait_nav_thread(self):
         self._nav_thread.join()
         self._nav_thread = None
+
+    def find_fiducial(self, target_id):
+        """Get all fiducials that Spot detects with its perception system."""
+        # Get all fiducial objects (an object of a specific type).
+        request_fiducials = [world_object_pb2.WORLD_OBJECT_APRILTAG]
+        fiducial_objects = self.world_object_client.list_world_objects(object_type=request_fiducials).world_objects
+        for fid in fiducial_objects:
+            if fid[0].apriltag_properties.tag_id == target_id:
+                return True
+        return False
