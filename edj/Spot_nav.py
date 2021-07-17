@@ -23,12 +23,17 @@ if __name__ == '__main__':
 
 		child_found = False
 
+		print('getting short_codes')
 		short_codes = spot.short_codes
 
+		print('popping first 19 short codes')
 		for i in range(19):
 			short_codes.pop(0)
 
+		print('reversing short codes')
 		reverse_short_codes = short_codes.reverse()
+
+		print('popping first short code in reversed list')
 		reverse_short_codes.pop(0)
 
 		to_and_fro = short_codes + reverse_short_codes
