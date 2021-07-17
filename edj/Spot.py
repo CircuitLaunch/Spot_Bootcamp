@@ -586,6 +586,6 @@ class Spot:
         request_fiducials = [world_object_pb2.WORLD_OBJECT_APRILTAG]
         fiducial_objects = self.world_object_client.list_world_objects(object_type=request_fiducials).world_objects
         for fid in fiducial_objects:
-            if fid[0].apriltag_properties.tag_id == target_id:
+            if fid.apriltag_properties.tag_id == target_id:
                 return True
         return False
