@@ -120,6 +120,7 @@ class Spot:
         self.current_waypoint_snapshots = {}
         self.current_edge_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
+        self.short_codes = []
 
         self._nav_thread = None
         self._abort_nav_mutex = Lock()
@@ -389,9 +390,10 @@ class Spot:
         # Sort the set of waypoints by their creation timestamp. If the creation timestamp is unavailable,
         # fallback to sorting by annotation name.
         waypoint_to_timestamp = sorted(waypoint_to_timestamp, key= lambda x:(x[1], x[2]))
-
+        self.short_codes = []
         def pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
             short_code = self.id_to_short_code(waypoint_id)
+            self.short_codes.append(short_code)
             if short_code is None or short_code_to_count[short_code] != 1:
                 short_code = '  '  # If the short code is not valid/unique, don't show it.
 
