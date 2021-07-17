@@ -27,18 +27,18 @@ if __name__ == '__main__':
 
 		if spot.find_fiducial(220):
 			spot.abort_nav = True
-		time.sleep(1.0)
+			time.sleep(1.0)
 
 		spot.wait_nav_thread()
 
-        for i in range(3):
-            spot.pose(yaw=0.25)
-            time.sleep(0.5)
-            spot.pose(yaw=-0.25)
-            time.sleep(0.5)
+		for i in range(3):
+			spot.pose(yaw=0.25)
+			time.sleep(0.5)
+			spot.pose(yaw=-0.25)
+			time.sleep(0.5)
 
-        spot.pose(pitch=0.0)
-        time.sleep(1.0)
+		spot.pose(pitch=0.0)
+		time.sleep(1.0)
 
 		unique_id = spot.find_unique_waypoint_id(initial_waypoint_short_code)
 
