@@ -1,5 +1,6 @@
 import time
 from bosdyn.api import robot_state_pb2, robot_command_pb2, synchronized_command_pb2, mobility_command_pb2, basic_command_pb2, geometry_pb2, trajectory_pb2
+from bosdyn.api import world_object_pb2
 from bosdyn.api.spot import robot_command_pb2 as spot_command_pb2
 from bosdyn.api.geometry_pb2 import SE2Velocity, SE2VelocityLimit, Vec2
 from bosdyn.api.graph_nav import graph_nav_pb2
@@ -12,12 +13,16 @@ from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_
 from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
 from bosdyn.client.robot_state import RobotStateClient
 from bosdyn.client.image import ImageClient
+from bosdyn.client.exceptions import ResponseError
 from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
 from bosdyn.client.local_grid import LocalGridClient
-from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body, get_odom_tform_body, get_a_tform_b
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
+from bosdyn.client.world_object import WorldObjectClient
+from threading import Thread, Lock
+import math
 
 BELLY_RUB_RIGHT = 1
 BELLY_RUB_LEFT = 2
@@ -32,9 +37,21 @@ class Spot:
 
         # Create a connection to the robot
         self.robot = self.sdk.create_robot(ip)
+        # Log into the robot
+        self.robot.authenticate(username, password)
+
+        self.id_client = self.robot.ensure_client('robot-id')
+        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
+        self.spot_state = self.state_client.get_robot_state()
+        self.estop_client = self.robot.ensure_client('estop')
+        self.lease_client = self.robot.ensure_client('lease')
+        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
+        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
+        self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
+        # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
+        self.world_object_client = self.robot.ensure_client(WorldObjectClient.default_service_name)
 
         # Get the client ID
-        self.id_client = self.robot.ensure_client('robot-id')
         self.spot_id = self.id_client.get_id()
         if trace_level >= 2:
             print(f'Spot Id:\n{self.spot_id}')
@@ -47,12 +64,7 @@ class Spot:
             patch = self.spot_id.software_release.version.patch_level
             print(f'{species} s/n: {serial_number}, hw version: {hw_version}, sw version: {major}.{minor} (patch level {patch})')
 
-        # Log into the robot
-        self.robot.authenticate(username, password)
-
         # Get the robot state
-        self.state_client = self.robot.ensure_client(RobotStateClient.default_service_name)
-        self.spot_state = self.state_client.get_robot_state()
         if trace_level >= 2:
             print(f'Spot State:\n{self.spot_state}')
         else:
@@ -64,7 +76,6 @@ class Spot:
                 print(f'Battery {id} charge: {charge}, voltage: {voltage}, temperatures: {temperatures}')
 
         # Create an estop client and get the estop status
-        self.estop_client = self.robot.ensure_client('estop')
         spot_estop_status = self.estop_client.get_status()
         if trace_level >= 2:
             print(f'Spot estop status:\n{spot_estop_status}')
@@ -86,7 +97,6 @@ class Spot:
             print(f'Spot estop status:\n{spot_estop_status}')
 
         # List current leases
-        self.lease_client = self.robot.ensure_client('lease')
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
             print(f'Spot lease list:\n{spot_lease_list}')
@@ -95,6 +105,8 @@ class Spot:
         if trace_level >= 1:
             print('Attempting to acquire lease')
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
+        self.lease_wallet = self.lease_client.lease_wallet
+
         self.lease = self.lease_client.acquire()
         spot_lease_list = self.lease_client.list_leases()
         if trace_level >= 2:
@@ -102,18 +114,19 @@ class Spot:
         elif trace_level >= 1:
             print('Lease acquired')
 
-        self.command_client = self.robot.ensure_client(RobotCommandClient.default_service_name)
-        self.image_client = self.robot.ensure_client(ImageClient.default_service_name)
-
-        self.nav_client = self.robot.ensure_client(GraphNavClient.default_service_name)
-        # self.nav_recording_client = self.robot.ensure_client(GraphNavRecordingServiceClient.default_service_name)
-
         self.map_current_filepath = None
         self.current_graph = None
         self.current_edges = {}
         self.current_waypoint_snapshots = {}
         self.current_edge_snapshots = {}
         self.current_annotation_name_to_wp_id = {}
+        self.short_codes = []
+
+        self._nav_thread = None
+        self._abort_nav_mutex = Lock()
+        self._abort_nav = False
+        self._current_nav_cmd_id_mutex = Lock()
+        self._current_nav_cmd_id = -1
 
         # Establish timesync
         self.robot.time_sync.wait_for_sync()
@@ -261,6 +274,10 @@ class Spot:
     def vision_tform_body(self):
         return get_vision_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot)
 
+    @property
+    def odom_tform_body(self):
+        return get_odom_tform_body(self.state_client.get_robot_state().kinematic_state.transforms_snapshot).to_proto()
+
     def move_to(self, x, y, z, rot_quat, duration=30.0, wait=True):
         body_tform_goal = math_helpers.SE3Pose(x=x, y=y, z=z, rot=rot_quat)
         new_tform = self.vision_tform_body * body_tform_goal
@@ -279,20 +296,21 @@ class Spot:
             self.current_graph = map_pb2.Graph()
             self.current_graph.ParseFromString(data)
         for waypoint in self.current_graph.waypoints:
-            with open(f'{filepath}/waypoint_snapshots/{waypoint.snapshot_id}'), 'rb' as snapshot_file:
+            with open(f'{filepath}/waypoint_snapshots/{waypoint.snapshot_id}', 'rb') as snapshot_file:
                 if self.trace_level >= 1:
                     print(f'Reading waypoint snapshot {waypoint.snapshot_id}')
                 wp_snapshot = map_pb2.WaypointSnapshot()
                 wp_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[wp_snapshot.id] = wp_snapshot
         for edge in self.current_graph.edges:
-            with open(f'{filepath}/edge_snapshots/{edge.snapshot_id}'), 'rb' as snapshot_file:
+            with open(f'{filepath}/edge_snapshots/{edge.snapshot_id}', 'rb') as snapshot_file:
                 if self.trace_level >= 1:
                     print(f'Reading edge snapshot {edge.snapshot_id}')
                 ed_snapshot = map_pb2.EdgeSnapshot()
                 ed_snapshot.ParseFromString(snapshot_file.read())
                 self.current_waypoint_snapshots[ed_snapshot.id] = ed_snapshot
 
+        '''
         if self.trace_level >= 1:
             print(f'Uploading map at {filepath} to Spot')
         response = self.nav_client.upload_graph(lease=self.lease.lease_proto, graph=self.current_graph)
@@ -307,6 +325,7 @@ class Spot:
             self.nav_client.upload_edge_snapshot(ed_snapshot)
             if self.trace_level >= 1:
                 print(f'Uploaded edge snapshot {snapshot_id}')
+        '''
 
         print('Map upload complete')
 
@@ -315,3 +334,267 @@ class Spot:
         if not localization_state.localization.waypoint_id:
             if self.trace_level >= 1:
                 print(f'Spot is not localized. Please localize.')
+
+        # Update waypoints and edges
+        self.current_annotation_name_to_wp_id, self.current_edges = self.update_waypoints_and_edges()
+
+    def clear_map(self):
+        self.nav_client.clear_graph(lease=self.lease.lease_proto)
+
+    def id_to_short_code(self, wp_id):
+        tokens = wp_id.split('-')
+        if len(tokens) > 2:
+            return f'{tokens[0][0]}{tokens[1][0]}'
+        return None
+
+    def update_waypoints_and_edges(self):
+        localization_id = self.nav_client.get_localization_state().localization.waypoint_id
+
+        name_to_id = {}
+        edges = {}
+
+        short_code_to_count = {}
+        waypoint_to_timestamp = []
+        for waypoint in self.current_graph.waypoints:
+            # Determine the timestamp that this waypoint was created at.
+            timestamp = -1.0
+            try:
+                timestamp = waypoint.annotations.creation_time.seconds + waypoint.annotations.creation_time.nanos / 1e9
+            except:
+                # Must be operating on an older graph nav map, since the creation_time is not
+                # available within the waypoint annotations message.
+                pass
+            waypoint_to_timestamp.append((waypoint.id,
+                                            timestamp,
+                                            waypoint.annotations.name))
+
+            # Determine how many waypoints have the same short code.
+            short_code = self.id_to_short_code(waypoint.id)
+
+            if short_code not in short_code_to_count:
+                short_code_to_count[short_code] = 0
+            short_code_to_count[short_code] += 1
+
+            # Add the annotation name/id into the current dictionary.
+            waypoint_name = waypoint.annotations.name
+            if waypoint_name:
+                if waypoint_name in name_to_id:
+                    # Waypoint name is used for multiple different waypoints, so set the waypoint id
+                    # in this dictionary to None to avoid confusion between two different waypoints.
+                    name_to_id[waypoint_name] = None
+                else:
+                    # First time we have seen this waypoint annotation name. Add it into the dictionary
+                    # with the respective waypoint unique id.
+                    name_to_id[waypoint_name] = waypoint.id
+
+        # Sort the set of waypoints by their creation timestamp. If the creation timestamp is unavailable,
+        # fallback to sorting by annotation name.
+        waypoint_to_timestamp = sorted(waypoint_to_timestamp, key= lambda x:(x[1], x[2]))
+        self.short_codes = []
+        def pp_waypoints(waypoint_id, waypoint_name, short_code_to_count, localization_id):
+            short_code = self.id_to_short_code(waypoint_id)
+            self.short_codes.append(short_code)
+            if short_code is None or short_code_to_count[short_code] != 1:
+                short_code = '  '  # If the short code is not valid/unique, don't show it.
+
+            print(f'{"->" if localization_id == waypoint_id else "  "} waypoint: {waypoint_name} id: {waypoint_id} short code: {short_code}')
+
+        print(f'{len(self.current_graph.waypoints)} waypoints:')
+        for waypoint in waypoint_to_timestamp:
+            pp_waypoints(waypoint[0], waypoint[2], short_code_to_count, localization_id)
+
+        for edge in self.current_graph.edges:
+            if edge.id.to_waypoint in edges:
+                if edge.id.from_waypoint not in edges[edge.id.to_waypoint]:
+                    edges[edge.id.to_waypoint].append(edge.id.from_waypoint)
+            else:
+                edges[edge.id.to_waypoint] = [edge.id.from_waypoint]
+
+        return name_to_id, edges
+
+    def set_initial_localization_fiducial(self):
+        """Trigger localization when near a fiducial."""
+        current_odom_tform_body = self.odom_tform_body
+        # Create an empty instance for initial localization since we are asking it to localize
+        # based on the nearest fiducial.
+        localization = nav_pb2.Localization()
+        self.nav_client.set_localization(initial_guess_localization=localization, ko_tform_body=current_odom_tform_body)
+
+    def set_initial_localization_waypoint(self, short_code):
+        wp = self.find_unique_waypoint_id(short_code)
+        if not wp:
+            return
+
+        state = self.state_client.get_robot_state()
+        odom_tform_body = self.odom_tform_body
+        localization = nav_pb2.Localization()
+        localization.waypoint_id = wp
+        localization.waypoint_tform_body.rotation.w = 1.0
+        self.nav_client.set_localization(
+            initial_guess_localization=localization,
+            max_distance=0.2,
+            max_yaw = 20.0 * math.pi / 180.0,
+            fiducial_init = graph_nav_pb2.SetLocalizationRequest.FIDUCIAL_INIT_NO_FIDUCIAL,
+            ko_tform_body=odom_tform_body)
+
+    def find_unique_waypoint_id(self, short_code):
+        name_to_id = self.current_annotation_name_to_wp_id
+        if len(short_code) != 2:
+            if short_code in name_to_id:
+                if name_to_id[short_code] is not None:
+                    return name_to_id[short_code]
+                else:
+                    print('{short_code} is not-unique. Please use the full waypoint-id')
+                    return None
+            return short_code
+
+        ret = short_code
+        for wp in self.current_graph.waypoints:
+            if short_code == self.id_to_short_code(wp.id):
+                if ret != short_code:
+                    return short_code
+                ret = wp.id
+        return ret
+
+    @property
+    def is_powered_on(self):
+        power_state = self.state_client.get_robot_state().power_state
+        return (power_state.motor_power_state == power_state.STATE_ON)
+
+    def toggle_power(self, should_power_on):
+        power = self.is_powered_on
+        if not power and should_power_on:
+            self.power_on()
+            motors_on = False
+            while not motors_on:
+                future = self.state_client.get_robot_state_async()
+                response = future.result(timeout = 10.0)
+                if response.power_state.motor_power_state == robot_state_pb2.PowerState.STATE_ON:
+                    motors_on = True
+                else:
+                    time.sleep(0.25)
+        elif power and not should_power_on:
+            self.power_off()
+        else:
+            return power
+
+        return self.is_powered_on
+
+    @property
+    def current_nav_cmd_id(self):
+        with self._current_nav_cmd_id_mutex:
+            return self._current_nav_cmd_id
+
+    @current_nav_cmd_id.setter
+    def current_nav_cmd_id(self, value):
+        with self._current_nav_cmd_id_mutex:
+            self._current_nav_cmd_id = value
+
+    @property
+    def nav_status(self):
+        cmd_id = self.current_nav_cmd_id
+        if cmd_id == -1:
+            return None
+        feedback = self.nav_client.navigation_feedback(cmd_id)
+        return feedback.status
+
+    @property
+    def nav_finished(self):
+        status = self.nav_status
+        if status == None:
+            return False
+        if status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
+            # Successfully completed the navigation commands!
+            return True
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
+            return True
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
+            return True
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
+            return True
+
+        # Navigation command is not complete yet.
+        return False
+
+    def report_nav_status(self):
+        status = self.nav_status
+        if status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_REACHED_GOAL:
+            print('Spot has reached the goal.')
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_LOST:
+            print('Spot is lost.')
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_STUCK:
+            print('Spot encounted an obstacle.')
+        elif status == graph_nav_pb2.NavigationFeedbackResponse.STATUS_ROBOT_IMPAIRED:
+            print('Spot impaired.')
+        else:
+            print('Navigation incomplete')
+
+    @property
+    def abort_nav(self):
+        with self._abort_nav_mutex:
+            return self._abort_nav
+
+    @abort_nav.setter
+    def abort_nav(self, value):
+        with self._abort_nav_mutex:
+            self._abort_nav = value
+
+    def nav_to(self, waypoint_id):
+        self.lease = self.lease_wallet.get_lease()
+        wp = self.find_unique_waypoint_id(waypoint_id)
+        print(f'find_unique_waypoint_id returned: {wp}')
+        if not wp:
+            return
+        if not self.toggle_power(should_power_on=True):
+            print('Could not power up Spot')
+            return
+
+        self.lease = self.lease_wallet.advance()
+        sublease = self.lease.create_sublease()
+        self.lease_keep_alive.shutdown()
+
+        is_finished = False
+        self.current_nav_cmd_id = None
+        cmd_id = None
+
+        while not is_finished and not self.abort_nav:
+            try:
+                with self._current_nav_cmd_id_mutex:
+                    cmd_id = self.nav_client.navigate_to(destination_waypoint_id=wp, cmd_duration=1.0, leases=[sublease.lease_proto], command_id=cmd_id)
+                    self._current_nav_cmd_id = cmd_id
+
+            except ResponseError as e:
+                print(f'Navigation error {e}')
+                break
+            time.sleep(0.5)
+            is_finished = self.nav_finished
+
+        self.lease = self.lease_wallet.advance()
+        self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
+
+    def threaded_nav_to(self, waypoint_id):
+        print(f'waypoint_id: \n{waypoint_id}')
+        self.abort_nav = False
+        self._nav_thread = Thread(target=self.nav_to, args=(waypoint_id, ))
+        self._nav_thread.start()
+
+    def wait_nav_thread(self):
+        self._nav_thread.join()
+        self._nav_thread = None
+
+    def find_fiducial(self, target_id):
+        """Get all fiducials that Spot detects with its perception system."""
+        # Get all fiducial objects (an object of a specific type).
+        request_fiducials = [world_object_pb2.WORLD_OBJECT_APRILTAG]
+        fiducial_objects = self.world_object_client.list_world_objects(object_type=request_fiducials).world_objects
+        for fid in fiducial_objects:
+            if fid.apriltag_properties.tag_id == target_id:
+                vision_tform_fiducial = get_a_tform_b(fid.transforms_snapshot, VISION_FRAME_NAME, fid.apriltag_properties.frame_name_fiducial).to_proto()
+                if vision_tform_fiducial != None:
+                    fiducial_rt_world = vision_tform_fiducial.position
+                    my_tform = self.vision_tform_body.position
+                    dx = fiducial_rt_world.x - my_tform.x
+                    dy = fiducial_rt_world.y - my_tform.y
+                    if (dx*dx + dy*dy) < 1.0:
+                        return True
+        return False
