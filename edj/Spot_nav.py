@@ -23,8 +23,15 @@ if __name__ == '__main__':
 
 		child_found = False
 
-		short_codes = spot.short_codes.pop(19)
-		to_and_fro = short_codes + short_codes.reverse().pop(0)
+		short_codes = spot.short_codes
+
+		for i in range(19):
+			short_codes.pop(0)
+
+		reverse_short_codes = short_codes.reverse()
+		reverse_short_codes.pop(0)
+
+		to_and_fro = short_codes + reverse_short_codes
 
 		for short_code in to_and_fro:
 
