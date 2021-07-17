@@ -31,7 +31,7 @@ if __name__ == '__main__':
 			spot.wait_nav_thread()
 
 			start_time = time.time()
-			while time.time() - start_time < 5.0:
+			while time.time() - start_time < 2.0:
 				if spot.find_fiducial(220):
 					spot.abort_nav = True
 					child_found = True

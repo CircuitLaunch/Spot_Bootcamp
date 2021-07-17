@@ -17,7 +17,7 @@ from bosdyn.client.exceptions import ResponseError
 from bosdyn.client.graph_nav import GraphNavClient
 from bosdyn.client.recording import GraphNavRecordingServiceClient
 from bosdyn.client.local_grid import LocalGridClient
-from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body, get_odom_tform_body
+from bosdyn.client.frame_helpers import BODY_FRAME_NAME, VISION_FRAME_NAME, get_vision_tform_body, get_odom_tform_body, get_a_tform_b
 from bosdyn.client import math_helpers
 from bosdyn.util import seconds_to_duration
 from bosdyn.client.world_object import WorldObjectClient
@@ -589,5 +589,12 @@ class Spot:
         fiducial_objects = self.world_object_client.list_world_objects(object_type=request_fiducials).world_objects
         for fid in fiducial_objects:
             if fid.apriltag_properties.tag_id == target_id:
-                return True
+                vision_tform_fiducial = get_a_tform_b(fid.transforms_snapshot, VISION_FRAME_NAME, fid.apriltag_properties.frame_name_fiducial).to_proto()
+                if vision_tform_fiducial != None:
+                    fiducial_rt_world = vision_tform_fiducial.position
+                    my_tform = self.vision_tform_body.position
+                    dx = fiducial_rt_world.x - my_tform.x
+                    dy = fiducial_rt_world.y - my_tform.y
+                    if (dx*dx + dy*dy) < 1.0:
+                        return True
         return False
