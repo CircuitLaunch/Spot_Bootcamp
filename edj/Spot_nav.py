@@ -19,7 +19,7 @@ if __name__ == '__main__':
 		spot.upload_map(path_to_map)
 
 		# spot.set_initial_localization_fiducial()
-		spot.set_initial_localization_waypoint(initial_waypoint_short_code)
+		# spot.set_initial_localization_waypoint(initial_waypoint_short_code)
 
 		unique_id = spot.find_unique_waypoint_id(waypoint_id_or_short_code)
 

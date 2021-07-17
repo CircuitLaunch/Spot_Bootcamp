@@ -547,9 +547,11 @@ class Spot:
         self.lease = self.lease_wallet.advance()
         sublease = self.lease.create_sublease()
         self.lease_keep_alive.shutdown()
+        
         is_finished = False
         self.current_nav_cmd_id = None
         cmd_id = None
+
         while not is_finished and not self.abort_nav:
             try:
                 with self._current_nav_cmd_id_mutex:
@@ -560,8 +562,8 @@ class Spot:
                 print(f'Navigation error {e}')
                 break
             time.sleep(0.5)
-
             is_finished = self.nav_finished
+
         self.lease = self.lease_wallet.advance()
         self.lease_keep_alive = bosdyn.client.lease.LeaseKeepAlive(self.lease_client)
 
