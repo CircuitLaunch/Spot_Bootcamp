@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
 	try:
 		path_to_map = './map'
-		initial_waypoint_short_code = 'am'
+		initial_waypoint_short_code = 'sl'
 		waypoint_id_or_short_code = 'zc'
 
 		# spot.clear_map()
@@ -27,8 +27,9 @@ if __name__ == '__main__':
 		#print('getting short_codes')
 		short_codes = spot.short_codes
 
-		#print('popping first 19 short codes')
-		for i in range(19):
+		# print('popping first 10 short codes')
+		# sl is actually the start; the first 10 are junk waypoints
+		for i in range(10):
 			short_codes.pop(0)
 
 		reverse_short_codes = copy.deepcopy(short_codes)
