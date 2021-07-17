@@ -235,6 +235,7 @@ class FollowFiducial(object):
         fiducial_objects = self._world_object_client.list_world_objects(
             object_type=request_fiducials).world_objects
         if len(fiducial_objects) > 0:
+            print(f'Fiducials found: {fiducial_objects}')
             # Return the first detected fiducial.
             return fiducial_objects[0]
         # Return none if no fiducials are found.
@@ -632,7 +633,7 @@ def main():
             robot.authenticate(options.username, options.password)
             robot.start_time_sync()
 
-            # --- E-stop --- 
+            # --- E-stop ---
             estop_client = robot.ensure_client('estop')
             estop_endpoint = bosdyn.client.estop.EstopEndpoint(client=estop_client, name='my_estop', estop_timeout=9.0)
             estop_endpoint.force_simple_setup()
@@ -666,6 +667,6 @@ def main():
 
 
 if __name__ == "__main__":
- 
+
     if not main():
         sys.exit(1)
