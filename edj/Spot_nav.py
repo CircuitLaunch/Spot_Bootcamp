@@ -22,7 +22,11 @@ if __name__ == '__main__':
 		# spot.set_initial_localization_waypoint(initial_waypoint_short_code)
 
 		child_found = False
-		for short_code in spot.short_codes:
+
+		short_codes = spot.short_codes.pop(19)
+		to_and_fro = short_codes + short_codes.reverse().pop(0)
+
+		for short_code in to_and_fro:
 
 			unique_id = spot.find_unique_waypoint_id(short_code)
 
@@ -40,11 +44,12 @@ if __name__ == '__main__':
 			if child_found:
 				break
 
-		for i in range(3):
-			spot.pose(yaw=0.25)
-			time.sleep(0.5)
-			spot.pose(yaw=-0.25)
-			time.sleep(0.5)
+		if child_found:
+			for i in range(3):
+				spot.pose(yaw=0.25)
+				time.sleep(0.5)
+				spot.pose(yaw=-0.25)
+				time.sleep(0.5)
 
 		spot.pose(pitch=0.0)
 		time.sleep(1.0)
