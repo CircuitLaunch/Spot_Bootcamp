@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from Spot import *
+import copy
 
 if __name__ == '__main__':
 	spot = Spot()
@@ -30,7 +31,7 @@ if __name__ == '__main__':
 		for i in range(19):
 			short_codes.pop(0)
 
-		reverse_short_codes = short_codes
+		reverse_short_codes = copy.deepcopy(short_codes)
 		reverse_short_codes.reverse()
 
 		# print('popping first short code in reversed list')
